@@ -5,6 +5,7 @@
   "description": "A standalone Manifest V3 extension for loading full SharePoint lists.",
   "scripts": {
     "check": "node scripts/validate.mjs",
-    "build": "node scripts/build.mjs"
+    "build": "node scripts/build.mjs",
+    "store-assets": "python3 scripts/generate-store-assets.py"
   }
 }
