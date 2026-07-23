@@ -1,0 +1,10 @@
+{
+  "name": "sharepoint-loader",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A standalone Manifest V3 extension for loading full SharePoint lists.",
+  "scripts": {
+    "check": "node scripts/validate.mjs",
+    "build": "node scripts/build.mjs"
+  }
+}

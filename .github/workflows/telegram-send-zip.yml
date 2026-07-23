@@ -1,0 +1,30 @@
+name: Send ZIP to Telegram
+
+on: workflow_dispatch
+
+permissions:
+  contents: read
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm run build
+      - name: Send ZIP
+        env:
+          BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          THREAD_ID: ${{ secrets.TELEGRAM_THREAD_ID }}
+        run: |
+          test -n "$BOT_TOKEN" || { echo 'TELEGRAM_BOT_TOKEN is required.' >&2; exit 1; }
+          test -n "$CHAT_ID" || { echo 'TELEGRAM_CHAT_ID is required.' >&2; exit 1; }
+          VERSION="$(jq -er .version manifest.json)"
+          args=(--fail-with-body --silent --show-error -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendDocument" -F chat_id="$CHAT_ID" -F document=@dist/sharepoint-loader.zip -F "caption=SharePoint Loader v${VERSION}")
+          [[ -z "$THREAD_ID" ]] || args+=(-F message_thread_id="$THREAD_ID")
+          response="$(mktemp)"; trap 'rm -f "$response"' EXIT
+          if ! curl "${args[@]}" >"$response"; then jq -r '.description // "Telegram request failed"' "$response" >&2; exit 1; fi
+          jq -e '.ok == true' "$response" >/dev/null || { jq -r '.description // "Telegram rejected the request"' "$response" >&2; exit 1; }
