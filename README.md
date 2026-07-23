@@ -33,6 +33,27 @@ npm run build
 The output is `dist/sharepoint-loader.zip`. It contains `manifest.json` at the
 archive root and `src/content.js`; generated ZIP files are ignored by Git.
 
+## Chrome Web Store assets
+
+Publication-ready listing copy and privacy answers are in
+[`docs/chrome-web-store-listing.md`](docs/chrome-web-store-listing.md) and
+[`docs/chrome-web-store-privacy.md`](docs/chrome-web-store-privacy.md). The
+screenshots, icon, and promotional tile are generated in
+[`store-assets/`](store-assets/). Generate the PNG artwork deterministically
+with:
+
+```sh
+npm run store-assets
+```
+
+The generated PNG files are intentionally ignored by Git because this
+repository's pull-request system does not accept binary files. Run the command
+locally immediately before uploading the resulting assets to the Web Store.
+
+Before submitting, replace the support-email placeholder in the privacy policy,
+publish it at a stable public HTTPS URL, and enter that URL in the Chrome Web
+Store Developer Dashboard.
+
 ## Local installation (unpacked)
 
 1. Clone or download and extract this repository.
