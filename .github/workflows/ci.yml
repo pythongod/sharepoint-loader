@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm run check
+      - run: npm run build
+      - name: Verify archive
+        run: |
+          unzip -t dist/sharepoint-loader.zip
+          entries="$(unzip -Z1 dist/sharepoint-loader.zip)"
+          grep -Fxq manifest.json <<<"$entries"
+          grep -Fxq src/content.js <<<"$entries"
+          ! grep -Eq '(^|/)sharepoint-loader/manifest\.json$' <<<"$entries"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sharepoint-loader
+          path: dist/sharepoint-loader.zip
+          if-no-files-found: error

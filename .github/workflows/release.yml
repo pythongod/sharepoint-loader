@@ -1,0 +1,52 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+    paths: [manifest.json, package.json]
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Resolve and validate version
+        run: |
+          VERSION="$(jq -er .version manifest.json)"
+          PACKAGE_VERSION="$(jq -er .version package.json)"
+          test "$VERSION" = "$PACKAGE_VERSION" || { echo 'manifest.json and package.json versions differ.' >&2; exit 1; }
+          RELEASE_TAG="v${VERSION}"
+          [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]] || { echo "Invalid release tag: $RELEASE_TAG" >&2; exit 1; }
+          if [[ "$GITHUB_REF_TYPE" == tag ]]; then
+            test "$GITHUB_REF_NAME" = "$RELEASE_TAG" || { echo "Tag must be $RELEASE_TAG." >&2; exit 1; }
+          elif git rev-parse -q --verify "refs/tags/$RELEASE_TAG" >/dev/null || git ls-remote --exit-code --tags origin "refs/tags/$RELEASE_TAG" >/dev/null 2>&1; then
+            echo "Release tag $RELEASE_TAG already exists; increment both manifest.json and package.json." >&2
+            exit 1
+          fi
+          echo "RELEASE_TAG=$RELEASE_TAG" >> "$GITHUB_ENV"
+      - run: npm run build
+      - name: Name release asset
+        run: |
+          source=dist/sharepoint-loader.zip
+          target="dist/sharepoint-loader-${RELEASE_TAG}.zip"
+          test -f "$source" || { echo "Missing release asset: $source" >&2; exit 1; }
+          mv "$source" "$target"
+          test -f "$target"
+          echo "RELEASE_ASSET=$target" >> "$GITHUB_ENV"
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$RELEASE_TAG" "$RELEASE_ASSET" --title "$RELEASE_TAG" --generate-notes --target "$GITHUB_SHA"
