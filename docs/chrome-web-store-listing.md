@@ -58,15 +58,27 @@ Loader** Chrome Web Store item.
 
 **Language:** English
 
-## Artwork upload order
+## Artwork
 
-The screenshots must be regenerated before the next submission — the versions
-in the repository show the previous single-button interface.
+Artwork is produced by the **Generate store assets** workflow, which runs the
+Cairo-based generator on Linux and uploads the PNGs as the `store-assets`
+build artifact. Run it from **Actions → Generate store assets → Run workflow**,
+or take the artifact from the run triggered by the release, then download and
+upload the files to the Developer Dashboard. It is not generated locally: the
+generator loads Cairo by its Linux shared-object name and will not run on
+macOS or Windows.
 
-1. `store-assets/screenshot-panel.png` — "Load, or export the whole list"
-2. `store-assets/screenshot-export-progress.png` — "See real progress and stop at any time"
-3. `store-assets/icon-128.png` — store icon
-4. `store-assets/small-promo-tile.png` — optional small promotional tile
+**The screenshots still depict the previous single-button interface.**
+`scripts/generate-store-assets.py` draws that older UI and must be updated to
+draw the current panel before the next submission — regenerating alone will
+not fix it.
+
+Upload order:
+
+1. `screenshot-load-full-list.png` — "Load every item, or export the list"
+2. `screenshot-loading-progress.png` — "See real progress and stop at any time"
+3. `icon-128.png` — store icon
+4. `small-promo-tile.png` — optional small promotional tile
 
 ## Reviewer notes
 
