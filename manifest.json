@@ -1,8 +1,18 @@
 {
   "manifest_version": 3,
   "name": "SharePoint Loader",
-  "version": "0.1.0",
-  "description": "Loads every dynamically rendered item in long SharePoint lists.",
+  "version": "0.2.0",
+  "description": "Load every item of a SharePoint list in the page, or export the whole list to CSV or JSON.",
+  "permissions": ["storage"],
+  "options_page": "src/options.html",
+  "background": {
+    "service_worker": "src/background.js"
+  },
+  "icons": {
+    "16": "icons/icon-16.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
   "content_scripts": [
     {
       "matches": [
@@ -11,8 +21,21 @@
         "https://*.sharepoint.de/*",
         "https://*.sharepoint.us/*"
       ],
-      "js": ["src/content.js"],
-      "run_at": "document_start"
+      "js": [
+        "src/settings.js",
+        "src/url.js",
+        "src/rows.js",
+        "src/progress.js",
+        "src/serialize.js",
+        "src/download.js",
+        "src/api.js",
+        "src/crawl.js",
+        "src/export.js",
+        "src/scroll.js",
+        "src/panel.js",
+        "src/content.js"
+      ],
+      "run_at": "document_idle"
     }
   ]
 }

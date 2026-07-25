@@ -2,47 +2,72 @@
 
 **Extension name:** SharePoint Loader  
 **Extension ID:** Assigned by the Chrome Web Store  
-**Last updated:** 2026-07-23
+**Last updated:** 2026-07-25
 
 ## 1. Single purpose
 
-> To load every dynamically rendered item in the SharePoint list currently
-> being viewed by progressively scrolling that list after the user selects the
-> **Load full list** button.
+> To give the user the complete contents of the SharePoint list they are
+> viewing: either by loading every item into the page, or by reading the list
+> through SharePoint's own API and saving it as a CSV or JSON file on the
+> user's device.
+
+Both actions serve the same purpose — a long SharePoint list only ever shows a
+fraction of itself, and this extension shows or saves the rest.
 
 ## 2. Permission justification
 
-The extension requests no optional Chrome API permissions.
+### `storage`
+
+> Stores the user's own preferences: how many items to request per call, folder
+> crawl limits, CSV delimiter and byte order mark, whether dates are shown in
+> UTC, and the timings used when loading a list by scrolling. No list content,
+> browsing activity, or personal data is written to storage.
 
 ### Site access / content-script matches
 
 **Hosts:** `https://*.sharepoint.com/*`, `https://*.sharepoint.cn/*`,
 `https://*.sharepoint.de/*`, and `https://*.sharepoint.us/*`
 
-> Access is required to add the **Load full list** control to SharePoint pages,
-> identify the page's scrollable list, count rendered list rows for progress,
-> and scroll that list after a user click. The extension does not run on other
-> sites. Broad SharePoint subdomain matching is needed because each Microsoft
-> 365 tenant uses its own SharePoint subdomain and sovereign clouds use the
-> listed country-specific domains.
+> Access is required to add the extension's control to SharePoint list pages,
+> to load the list in the page by scrolling it, and to read the list through
+> SharePoint's own REST API on the same site the user is already viewing. The
+> extension does not run on other sites. Broad SharePoint subdomain matching is
+> needed because each Microsoft 365 tenant uses its own SharePoint subdomain
+> and sovereign clouds use the listed country-specific domains.
 
-## 3. Privacy practices answers
+No host permissions beyond these content-script matches are declared, and the
+extension requests no optional permissions.
 
-Chrome Web Store disclosure uses “collection” to mean transmitting data off the
-user's device. SharePoint Loader processes the current page locally and makes
-no external network requests.
+## 3. Network activity
+
+The extension makes requests to exactly one place: the SharePoint site the user
+currently has open. These requests use the user's existing signed-in session,
+are same-origin with the page, and call the same documented SharePoint REST
+endpoints the SharePoint web interface itself uses to display a list
+(`RenderListDataAsStream`, `GetList`, and `contextinfo`). They are read-only.
+
+No data is sent to the developer, to any analytics service, or to any other
+third party. The extension contains no remote code, no advertising, and no
+accounts.
+
+## 4. Privacy practices answers
+
+Chrome Web Store disclosure uses "collection" to mean transmitting data off the
+user's device. SharePoint Loader transmits nothing: it reads the user's own
+SharePoint data from the user's own SharePoint tenant and, when the user asks,
+writes it to a file on the user's own device.
 
 | Data category | Answer | Explanation |
 | --- | --- | --- |
-| Personally identifiable information | Not collected | No names, email addresses, identifiers, or account details are stored or transmitted. |
+| Personally identifiable information | Not collected | Nothing is transmitted off the device. An exported file may contain names or email addresses held in the user's own list; that file is written only to the user's device, at the user's request. |
 | Health information | Not collected | The extension does not store or transmit health data. |
 | Financial and payment information | Not collected | The extension does not access or transmit payment data. |
-| Authentication information | Not collected | The extension does not access passwords, credentials, or tokens. |
+| Authentication information | Not collected | The extension does not read, store, or transmit passwords, credentials, or tokens. Requests rely on the browser's existing SharePoint session cookie, which the extension never reads. |
 | Personal communications | Not collected | The extension does not access or transmit communications. |
 | Location | Not collected | The extension does not access location data. |
-| Web history | Not collected | The extension neither records nor transmits visited URLs or search history. |
-| User activity | Not collected | A click on the extension's own injected button starts or stops loading locally; clicks, keystrokes, and browsing behavior are not recorded or transmitted. |
-| Website content | Not collected | The extension locally inspects layout, rendered list-row markers, and scroll dimensions on the current SharePoint page solely to scroll the list and display progress. Page content never leaves the browser. |
+| Web history | Not collected | The extension neither records nor transmits visited URLs or search history. It reads the address of the current page only to identify which list is being viewed. |
+| User activity | Not collected | Selecting an action in the extension's own panel starts or stops work locally. Clicks, keystrokes, and browsing behaviour are not recorded or transmitted. |
+| Website content | Not collected | The extension reads the current list's items from SharePoint and, on the scrolling path, inspects layout and row markers on the page. This content is processed in the browser and written to a file only when the user selects an export. It is never transmitted anywhere. |
 
 ### Required certifications
 
@@ -52,38 +77,51 @@ Select all three certifications in the Privacy practices tab:
 - [x] I do not use or transfer user data for purposes unrelated to the item's single purpose.
 - [x] I do not use or transfer user data to determine creditworthiness or for lending purposes.
 
-## 4. Data handling and retention
+## 5. Data handling and retention
 
-- No user data is sold, shared, or transmitted.
-- No analytics, advertisements, remote code, or external APIs are used.
-- No user data is persisted in extension storage.
-- Temporary DOM measurements and row counts exist only in the open page's
-  memory and disappear when the page is closed or reloaded.
-- Uninstalling the extension removes the extension code; there is no retained
-  user data to delete.
+- No user data is sold, shared, or transmitted to the developer or any third
+  party.
+- No analytics, advertisements, remote code, or external services are used.
+- `chrome.storage.sync` holds the user's preferences only, listed in section 2.
+  Chrome may synchronise these preferences between the user's own signed-in
+  Chrome profiles.
+- Exported files are written by the browser's ordinary download mechanism to
+  wherever the user chooses to save them. The extension keeps no copy.
+- List content read during a run exists only in the open page's memory and is
+  discarded when the page is closed or reloaded.
+- Uninstalling the extension removes the extension code and its stored
+  preferences. Files the user already saved are unaffected.
 
-## 5. Privacy policy text
+## 6. Privacy policy text
 
 Publish the following text at a stable, publicly accessible HTTPS URL and enter
 that URL in the Developer Dashboard:
 
 > **SharePoint Loader Privacy Policy**  
-> Last updated: July 23, 2026
+> Last updated: July 25, 2026
 >
-> SharePoint Loader has one purpose: after you select **Load full list**, it
-> progressively scrolls the SharePoint list you are viewing so SharePoint can
-> render its remaining items.
+> SharePoint Loader has one purpose: to give you the complete contents of the
+> SharePoint list you are viewing. It can load every item into the page, and it
+> can save the list to a CSV or JSON file on your device.
 >
-> The extension does not collect, store, sell, or transmit personal information
-> or other user data. It does not use analytics, advertising, remote code, or
-> external services. On supported SharePoint pages, it locally examines DOM
-> layout, scroll dimensions, and rendered row markers to find and scroll the
-> current list and show an item count. This processing occurs only in your
-> browser; page content and browsing activity are never sent elsewhere.
+> The extension does not collect, store, sell, or transmit your personal
+> information. It uses no analytics, advertising, remote code, or external
+> services, and it sends nothing to the developer.
 >
-> The extension retains no user data. Closing or reloading the page clears the
-> temporary in-page state used by an active loading run. Uninstalling the
-> extension removes the extension code.
+> To read a list, the extension calls SharePoint's own API on the site you
+> already have open, using your existing sign-in. These requests are read-only
+> and go only to that SharePoint site. On the scrolling path, the extension
+> also examines page layout and row markers in order to scroll the list and
+> report progress. All of this happens in your browser.
+>
+> Your preferences — items per request, folder limits, CSV options, date
+> handling, and scrolling timings — are stored in your browser profile using
+> Chrome's storage, and may sync between your own Chrome profiles. No list
+> content is stored.
+>
+> Files you export are saved by your browser wherever you choose. The extension
+> retains no copy of them and no other data. Uninstalling the extension removes
+> its code and your stored preferences.
 >
 > For privacy questions, contact: **[INSERT SUPPORT EMAIL BEFORE PUBLISHING]**
 
@@ -91,20 +129,24 @@ Replace the bracketed support address and publish the policy before submission.
 The Web Store listing's privacy-policy field must contain the resulting public
 URL, not this repository file's URL unless it is served as an HTTPS web page.
 
-## 6. Prominent disclosure
+## 7. Prominent disclosure
 
 **Needed:** No.
 
 The extension does not collect or transmit personal or sensitive user data.
-Its limited, local interaction with the current SharePoint list is apparent
-from the injected button and is necessary for the extension's stated purpose.
+Reading the list the user is already looking at, and saving it only when the
+user selects an export, is apparent from the panel and necessary for the
+extension's stated purpose.
 
-## 7. Pre-submission checklist
+## 8. Pre-submission checklist
 
 - [ ] Replace the privacy policy's support-email placeholder.
 - [ ] Publish the privacy policy at a stable public HTTPS URL.
 - [ ] Enter that URL in the Developer Dashboard.
 - [ ] Confirm the assigned extension ID in release/publishing configuration.
-- [ ] Upload the screenshots and icon from `store-assets/`.
+- [ ] Regenerate and upload the screenshots and icon from `store-assets/`; the
+      previous screenshots show the single-button interface that no longer
+      exists.
+- [ ] Confirm the declared permissions are still exactly `storage` plus the
+      four SharePoint content-script matches.
 - [ ] Recheck these answers whenever functionality or permissions change.
-

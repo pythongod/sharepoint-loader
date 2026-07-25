@@ -11,25 +11,41 @@ Loader** Chrome Web Store item.
 
 **Summary** (132-character limit)
 
-> Load every dynamically rendered item in a long SharePoint list with one click.
+> Load a long SharePoint list completely, or export the whole list to CSV or JSON.
 
 **Detailed description**
 
-> SharePoint Loader adds a small **Load full list** button to supported
-> Microsoft SharePoint list and document-library pages.
+> A long SharePoint list never shows you all of itself. SharePoint Loader gives
+> you the rest of it.
 >
-> Select the button and the extension progressively scrolls the current list,
-> giving SharePoint time to render folders, files, and rows that were not
-> initially loaded. A live item count shows progress. Select the button again
-> at any time to stop.
+> On a SharePoint list or document library, a small panel appears in the lower
+> right with two things it can do:
+>
+> **Load full list** — progressively scrolls the list so SharePoint renders the
+> folders, files, and rows it had not loaded yet. Use this when you want to
+> select everything in the page, for example before "Download as zip".
+>
+> **Export CSV / Export JSON** — reads the list through SharePoint's own API
+> and saves it as a file. The export contains the columns of the view you are
+> looking at, with the same values SharePoint displays. Tick **Include
+> subfolders** to cover an entire folder tree and add a folder path column.
+>
+> While a run is going, the panel shows progress and can be stopped at any
+> time. If something fails partway through a long run, the extension offers to
+> save what it already read.
+>
+> Settings — items per request, folder limits, CSV delimiter and byte order
+> mark, UTC or local dates, and the scrolling timings — are on the extension's
+> options page.
 >
 > SharePoint Loader is intentionally focused:
 >
 > • Works only on supported SharePoint domains  
-> • Runs only when you select **Load full list**  
-> • Does not send list contents or browsing activity anywhere  
-> • Does not use analytics, advertising, accounts, or remote code  
-> • Does not require configuration
+> • Runs only when you select an action  
+> • Reads only the SharePoint site you already have open, using your existing
+>   sign-in, and only ever reads — it never writes to SharePoint  
+> • Sends nothing to the developer or any third party  
+> • No analytics, advertising, accounts, or remote code
 >
 > Supported SharePoint hosts include sharepoint.com, sharepoint.cn,
 > sharepoint.de, and sharepoint.us.
@@ -44,17 +60,32 @@ Loader** Chrome Web Store item.
 
 ## Artwork upload order
 
-1. `store-assets/screenshot-load-full-list.png` — “Load every item with one click”
-2. `store-assets/screenshot-loading-progress.png` — “See progress and stop at any time”
+The screenshots must be regenerated before the next submission — the versions
+in the repository show the previous single-button interface.
+
+1. `store-assets/screenshot-panel.png` — "Load, or export the whole list"
+2. `store-assets/screenshot-export-progress.png` — "See real progress and stop at any time"
 3. `store-assets/icon-128.png` — store icon
 4. `store-assets/small-promo-tile.png` — optional small promotional tile
 
 ## Reviewer notes
 
 > To test the extension, open a modern SharePoint list or document library on
-> one of the declared SharePoint hosts. The blue **Load full list** control
-> appears in the lower-right corner. Select it to progressively scroll the
-> list. While running, the control displays the detected item count; select it
-> again to stop. The run also stops automatically after the bottom of the list
-> has settled or after the five-minute safety limit.
-
+> one of the declared SharePoint hosts. A **SharePoint Loader** control appears
+> in the lower-right corner; select it to open the panel. The panel appears
+> only on list and library pages, not on other SharePoint pages.
+>
+> **Load full list** progressively scrolls the list in the page and reports the
+> number of rows loaded. It stops when the list settles, when the configured
+> time limit is reached, or when you select Stop.
+>
+> **Export CSV** and **Export JSON** read the list using SharePoint's own REST
+> API (`RenderListDataAsStream`) on the same site, with the signed-in user's
+> session, and save the result as a file. These requests are read-only. Tick
+> **Include subfolders** first to walk the whole folder tree. Progress shows
+> the item count, against the list's total item count when the export covers
+> the whole list.
+>
+> The gear icon opens the options page, which stores preferences using the
+> `storage` permission. No other permissions are requested and no data is sent
+> anywhere other than the SharePoint site being viewed.

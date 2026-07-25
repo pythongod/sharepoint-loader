@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>SharePoint Loader settings</title>
+    <style>
+      body {
+        margin: 0 auto;
+        padding: 32px 24px;
+        max-width: 620px;
+        color: #242424;
+        background: #faf9f8;
+        font: 400 14px/1.5 -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      }
+      h1 { margin: 0 0 4px; font-size: 20px; }
+      p.intro { margin: 0 0 24px; color: #616161; }
+      fieldset {
+        margin: 0 0 16px;
+        padding: 16px;
+        border: 1px solid #e1dfdd;
+        border-radius: 6px;
+        background: #fff;
+      }
+      legend { padding: 0 6px; font-weight: 600; }
+      .field { display: grid; gap: 4px; margin-bottom: 14px; }
+      .field:last-child { margin-bottom: 0; }
+      .field label { font-weight: 600; }
+      .field .hint { color: #616161; font-size: 13px; }
+      .field.inline { grid-template-columns: auto 1fr; align-items: center; gap: 8px; }
+      .field.inline label { font-weight: 400; }
+      input[type='number'], select {
+        padding: 6px 8px;
+        max-width: 220px;
+        border: 1px solid #8a8886;
+        border-radius: 4px;
+        font: inherit;
+      }
+      footer { display: flex; align-items: center; gap: 12px; }
+      button {
+        padding: 8px 16px;
+        border: 1px solid #0f6cbd;
+        border-radius: 4px;
+        background: #0f6cbd;
+        color: #fff;
+        font: 600 14px/1.2 inherit;
+        cursor: pointer;
+      }
+      button.secondary { background: #fff; color: #0f6cbd; }
+      #saved { color: #0b6a0b; }
+    </style>
+  </head>
+  <body>
+    <h1>SharePoint Loader</h1>
+    <p class="intro">
+      These settings apply to reading and exporting lists. Nothing here is sent
+      anywhere; values are stored in your browser profile.
+    </p>
+
+    <fieldset>
+      <legend>Reading</legend>
+      <div class="field">
+        <label for="pageSize">Items per request</label>
+        <input id="pageSize" type="number" min="1" max="5000" />
+        <span class="hint">SharePoint rejects values above 5000.</span>
+      </div>
+      <div class="field inline">
+        <input id="datesInUtc" type="checkbox" />
+        <label for="datesInUtc">Return dates in UTC rather than local time</label>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Subfolders</legend>
+      <div class="field inline">
+        <input id="includeSubfoldersByDefault" type="checkbox" />
+        <label for="includeSubfoldersByDefault">Include subfolders by default</label>
+      </div>
+      <div class="field">
+        <label for="maxCrawlDepth">Maximum folder depth</label>
+        <input id="maxCrawlDepth" type="number" min="1" max="1000" />
+      </div>
+      <div class="field">
+        <label for="maxCrawlFolders">Maximum folders per run</label>
+        <input id="maxCrawlFolders" type="number" min="1" max="100000" />
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>CSV</legend>
+      <div class="field">
+        <label for="csvDelimiter">Delimiter</label>
+        <select id="csvDelimiter">
+          <option value=",">Comma</option>
+          <option value=";">Semicolon</option>
+        </select>
+        <span class="hint">
+          Choose semicolon if your Excel locale expects it.
+        </span>
+      </div>
+      <div class="field inline">
+        <input id="csvBom" type="checkbox" />
+        <label for="csvBom">Add a byte order mark</label>
+      </div>
+      <span class="hint">
+        Without a byte order mark, Excel misreads accented characters.
+      </span>
+    </fieldset>
+
+    <fieldset>
+      <legend>Load full list (scrolling)</legend>
+      <div class="field">
+        <label for="scrollSettleMs">Settle time before stopping (ms)</label>
+        <input id="scrollSettleMs" type="number" min="250" max="60000" />
+      </div>
+      <div class="field">
+        <label for="scrollMaxRunMs">Maximum run time (ms)</label>
+        <input id="scrollMaxRunMs" type="number" min="1000" max="3600000" />
+      </div>
+    </fieldset>
+
+    <footer>
+      <button id="save" type="button">Save</button>
+      <button id="reset" class="secondary" type="button">Restore defaults</button>
+      <span id="saved" role="status" aria-live="polite"></span>
+    </footer>
+
+    <script src="settings.js"></script>
+    <script src="options.js"></script>
+  </body>
+</html>
