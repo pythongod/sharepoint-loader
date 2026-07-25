@@ -1,151 +1,53 @@
-(function startSharePointLoader() {
-  const buttonId = "sharepoint-loader-load-all";
-  const settleTime = 2500;
-  const maximumRunTime = 5 * 60 * 1000;
+'use strict';
 
-  function scrollableElements() {
-    return [...document.querySelectorAll("body *")].filter((element) => {
-      const style = getComputedStyle(element);
-      return /(auto|scroll)/.test(style.overflowY) &&
-        element.clientHeight > 150 &&
-        element.scrollHeight > element.clientHeight + 20;
-    });
-  }
+// Entry point. Mounts the panel only where a list actually exists, and follows
+// SharePoint's in-page navigation, which changes folders by rewriting the
+// query string without ever reloading the document.
+(function (SPL) {
+  const POLL_MS = 250;
 
-  function likelyListScroller() {
-    const candidates = scrollableElements();
+  let mounted = null;
+  let lastHref = null;
 
-    return candidates.sort((left, right) => {
-      const leftRows = left.querySelectorAll(
-        '[role="row"], [data-automationid="DetailsRow"]'
-      ).length;
+  function sync() {
+    if (location.href === lastHref) return;
 
-      const rightRows = right.querySelectorAll(
-        '[role="row"], [data-automationid="DetailsRow"]'
-      ).length;
+    lastHref = location.href;
 
-      return (rightRows - leftRows) ||
-        (right.scrollHeight - left.scrollHeight);
-    })[0] || document.scrollingElement;
+    const context = SPL.url.parse(location.href);
+
+    if (!context) {
+      if (mounted) {
+        mounted.destroy();
+        mounted = null;
+      }
+
+      return;
+    }
+
+    // Moving between folders of the same list keeps the panel and its state;
+    // moving to a different list rebuilds it.
+    if (mounted && mounted.context.listUrl === context.listUrl) {
+      mounted.context = context;
+      mounted.update(context);
+
+      return;
+    }
+
+    if (mounted) mounted.destroy();
+
+    mounted = SPL.panel.mount(context);
+    mounted.context = context;
   }
 
   function start() {
-    const button = document.createElement("button");
-
-    button.id = buttonId;
-    button.type = "button";
-    button.textContent = "Load full list";
-    button.title =
-      "Scroll through the SharePoint list so dynamically loaded folders become available";
-
-    button.style.cssText = [
-      "all: initial",
-      "position: fixed",
-      "right: 20px",
-      "bottom: 20px",
-      "z-index: 2147483647",
-      "box-sizing: border-box",
-      "padding: 10px 16px",
-      "border: 1px solid #0f6cbd",
-      "border-radius: 4px",
-      "background: #0f6cbd",
-      "color: white",
-      "font: 600 14px/20px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-      "cursor: pointer",
-      "box-shadow: 0 2px 8px rgba(0,0,0,.25)"
-    ].join(";");
-
-    let cancelled = false;
-    let running = false;
-
-    const setIdle = (label = "Load full list") => {
-      running = false;
-      button.disabled = false;
-      button.textContent = label;
-
-      setTimeout(() => {
-        if (!running && button.isConnected) {
-          button.textContent = "Load full list";
-        }
-      }, 3000);
-    };
-
-    const loadAll = async () => {
-      if (running) {
-        cancelled = true;
-        button.textContent = "Stopping…";
-        return;
-      }
-
-      const scroller = likelyListScroller();
-
-      if (!scroller) {
-        setIdle("List not found");
-        return;
-      }
-
-      running = true;
-      cancelled = false;
-
-      const startedAt = Date.now();
-      let lastChange = Date.now();
-      let previousHeight = 0;
-      let previousItems = 0;
-
-      while (
-        !cancelled &&
-        Date.now() - startedAt < maximumRunTime
-      ) {
-        const itemCount = scroller.querySelectorAll(
-          [
-            '[role="row"]',
-            '[data-automationid="DetailsRow"]',
-            '[data-automationid="FieldRenderer-name"]'
-          ].join(",")
-        ).length;
-
-        const height = scroller.scrollHeight;
-
-        if (
-          height !== previousHeight ||
-          itemCount !== previousItems
-        ) {
-          previousHeight = height;
-          previousItems = itemCount;
-          lastChange = Date.now();
-        }
-
-        scroller.scrollTop = Math.min(
-          scroller.scrollTop +
-            Math.max(300, scroller.clientHeight * 0.8),
-          height
-        );
-
-        button.textContent =
-          `Loading… ${itemCount || ""}`.trim();
-
-        const reachedBottom =
-          scroller.scrollTop + scroller.clientHeight >=
-          scroller.scrollHeight - 2;
-
-        if (
-          reachedBottom &&
-          Date.now() - lastChange >= settleTime
-        ) {
-          break;
-        }
-
-        await new Promise((resolve) => {
-          setTimeout(resolve, 200);
-        });
-      }
-
-      setIdle(cancelled ? "Stopped" : "List loaded");
-    };
-
-    button.addEventListener("click", loadAll);
-    (document.body || document.documentElement).append(button);
+    sync();
+    setInterval(sync, POLL_MS);
   }
 
-  start();
-})();
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', start, { once: true });
+  } else {
+    start();
+  }
+})((globalThis.SPL = globalThis.SPL || {}));

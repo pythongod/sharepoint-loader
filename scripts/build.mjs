@@ -1,15 +1,18 @@
 import { execFileSync } from 'node:child_process';
-import { cpSync, mkdirSync, mkdtempSync, rmSync, utimesSync } from 'node:fs';
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, utimesSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
+import { packageFiles } from './package-files.mjs';
 
 const root = resolve(import.meta.dirname, '..');
 const dist = join(root, 'dist');
 const artifact = join(dist, 'sharepoint-loader.zip');
 execFileSync(process.execPath, ['scripts/validate.mjs'], { cwd: root, stdio: 'inherit' });
 
+const manifest = JSON.parse(readFileSync(join(root, 'manifest.json'), 'utf8'));
+const files = packageFiles(root, manifest);
+
 const staging = mkdtempSync(join(tmpdir(), 'sharepoint-loader-'));
-const files = ['manifest.json', 'src/content.js'];
 try {
   for (const file of files) {
     const destination = join(staging, file);

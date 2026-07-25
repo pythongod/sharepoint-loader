@@ -1,12 +1,38 @@
 # SharePoint Loader
 
-A standalone Manifest V3 browser extension that adds a **Load full list**
-button to SharePoint lists.
+A standalone Manifest V3 browser extension that gives you the complete contents
+of a SharePoint list. It adds a panel to SharePoint list and document-library
+pages that can:
 
-The button automatically scrolls through a long SharePoint list so that
-dynamically rendered folders and files are loaded.
+- **Load full list** — progressively scroll the list so SharePoint renders the
+  folders, files, and rows it had not loaded yet. This is what makes the page
+  itself hold everything, so SharePoint's own select-all and "Download as zip"
+  cover the whole library.
+- **Export CSV / JSON** — read the list through SharePoint's own REST API and
+  save it as a file, using the columns of the view you are looking at. Tick
+  **Include subfolders** to walk the whole folder tree and add a folder path
+  column.
 
-Click the button again while it is running to stop loading.
+Progress is reported against the list's real item count where one exists, and
+as a running total where it does not. Any run can be stopped, and a run that
+fails partway offers to save what it already read.
+
+The panel appears only on pages where a list is actually present.
+
+## How it reads a list
+
+The content script calls SharePoint's documented
+[`RenderListDataAsStream`](https://learn.microsoft.com/sharepoint/dev/sp-add-ins/working-with-lists-and-list-items-with-rest)
+endpoint on the same origin as the page, using the browser's existing
+SharePoint session. Requests are read-only, strictly sequential, and back off
+when SharePoint throttles. Nothing is sent anywhere else — see
+[`docs/chrome-web-store-privacy.md`](docs/chrome-web-store-privacy.md).
+
+## Settings
+
+The options page (the gear icon in the panel, or the extension's entry in
+`chrome://extensions`) controls items per request, folder crawl limits, CSV
+delimiter and byte order mark, UTC or local dates, and the scrolling timings.
 
 ## Supported hosts
 
@@ -15,13 +41,26 @@ Click the button again while it is running to stop loading.
 - `*.sharepoint.de`
 - `*.sharepoint.us`
 
-## Validate and build
+## Validate, test, and build
 
-Node.js 22 and the `zip` command are required. Validate the manifest, source,
-version alignment, and SharePoint-only matches with:
+Node.js 22 and the `zip` command are required. Validation covers the manifest,
+permissions, SharePoint-only matches, version alignment, and that every
+packaged file exists; it then runs the test suite:
 
 ```sh
 npm run check
+```
+
+Tests alone:
+
+```sh
+npm test
+```
+
+The toolbar icons are generated deterministically and committed:
+
+```sh
+npm run icons
 ```
 
 Build the installable archive with:
@@ -30,8 +69,55 @@ Build the installable archive with:
 npm run build
 ```
 
-The output is `dist/sharepoint-loader.zip`. It contains `manifest.json` at the
-archive root and `src/content.js`; generated ZIP files are ignored by Git.
+The output is `dist/sharepoint-loader.zip`, containing `manifest.json` at the
+archive root alongside `src/` and `icons/`. The file list is derived from the
+manifest — including scripts referenced only by the options page — rather than
+maintained by hand, so adding a module needs no build change. Generated ZIP
+files are ignored by Git.
+
+## Architecture
+
+Each module is a dependency-free file that wraps itself in a shared `SPL`
+namespace, so the same file loads as a Chrome classic content script and as a
+CommonJS module under `node --test`:
+
+| File | Purpose |
+| --- | --- |
+| `src/url.js` | Page URL → list, folder, and view identity |
+| `src/api.js` | Same-origin fetch, form digest, retry and backoff |
+| `src/rows.js` | API responses → rows, columns, continuation tokens |
+| `src/crawl.js` | Breadth-first folder walk |
+| `src/serialize.js` | Rows → CSV or JSON text, written per page |
+| `src/export.js` | Orchestrates a read and hands off the finished chunks |
+| `src/progress.js` | Progress state → display text |
+| `src/settings.js` | Defaults and `chrome.storage.sync` |
+| `src/scroll.js` | The in-page scrolling loader |
+| `src/panel.js`, `src/content.js` | Panel UI and entry point |
+
+Content scripts run in an isolated world and cannot read the page's
+`_spPageContextInfo`, so list identity is derived entirely from the URL. The
+manifest's script order is load-bearing and is covered by a test.
+
+## Manual verification
+
+The unit tests cover everything except the DOM and the network. Before
+releasing, confirm against a real tenant:
+
+1. The panel appears on a document library and on a `/Lists/` list, and does
+   not appear on a site home page.
+2. **Load full list** reaches the bottom of a long library and reports the row
+   count; stopping it mid-run reports "Stopped".
+3. **Export CSV** on a library produces the view's columns, opens correctly in
+   Excel, and matches the item count shown by SharePoint.
+4. **Include subfolders** produces a folder path column covering nested
+   folders.
+5. Paging works beyond one page — verify on a list of more than 500 items that
+   the export is complete. This is the behaviour flagged in the design document
+   as needing confirmation against a live tenant: the response's `NextHref`
+   continuation is observed behaviour rather than documented. If it proves
+   unreliable, `SPL.rows.pagingFromLastRow` implements the documented
+   `RowLimit` fallback and is already tested.
+6. Settings persist across a browser restart.
 
 ## Chrome Web Store assets
 

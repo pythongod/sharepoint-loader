@@ -1,6 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { readFileSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { packageFiles } from './package-files.mjs';
 
 const root = resolve(import.meta.dirname, '..');
 const fail = (message) => {
@@ -37,26 +38,36 @@ for (const script of manifest.content_scripts) {
   }
 }
 
-const javascriptReferences = [];
-const findJavaScript = (value) => {
-  if (typeof value === 'string' && value.endsWith('.js')) javascriptReferences.push(value);
-  else if (Array.isArray(value)) value.forEach(findJavaScript);
-  else if (value && typeof value === 'object') Object.values(value).forEach(findJavaScript);
-};
-findJavaScript(manifest);
-if (javascriptReferences.length === 0) fail('manifest.json does not reference a content script');
-for (const file of new Set(javascriptReferences)) {
-  if (/^[a-z]+:/i.test(file) || file.startsWith('//')) fail(`JavaScript reference must be local: ${file}`);
+// New permissions change the Web Store privacy disclosure, so adding one must
+// be a deliberate edit here rather than a silent manifest change.
+const allowedPermissions = new Set(['storage']);
+for (const permission of manifest.permissions ?? []) {
+  if (!allowedPermissions.has(permission)) fail(`permission is not approved: ${permission}`);
+}
+if (manifest.host_permissions) fail('host_permissions must not be declared');
+if (manifest.optional_permissions) fail('optional_permissions must not be declared');
+
+if (!manifest.options_page) fail('manifest.json must declare an options page');
+if (!manifest.icons || !manifest.icons['128']) fail('manifest.json must declare a 128px icon');
+
+const files = packageFiles(root, manifest);
+if (!files.includes('src/content.js')) fail('the content script entry point is missing');
+
+for (const file of files) {
   try {
-    if (!statSync(resolve(root, file)).isFile()) fail(`JavaScript reference is not a file: ${file}`);
+    if (!statSync(resolve(root, file)).isFile()) fail(`packaged reference is not a file: ${file}`);
   } catch {
-    fail(`referenced JavaScript file does not exist: ${file}`);
+    fail(`packaged file does not exist: ${file}`);
   }
 }
 
+const javascript = files.filter((file) => file.endsWith('.js'));
+if (javascript.length === 0) fail('manifest.json does not reference a content script');
 try {
-  execFileSync(process.execPath, ['--check', 'src/content.js'], { cwd: root, stdio: 'inherit' });
+  execFileSync(process.execPath, ['--check', ...javascript], { cwd: root, stdio: 'inherit' });
 } catch {
-  fail('node --check src/content.js failed');
+  fail('node --check failed');
 }
-console.log(`Validation passed: Manifest V3, version ${manifest.version}, ${javascriptReferences.length} JavaScript reference(s).`);
+console.log(
+  `Validation passed: Manifest V3, version ${manifest.version}, ${files.length} packaged file(s), ${javascript.length} script(s).`
+);
