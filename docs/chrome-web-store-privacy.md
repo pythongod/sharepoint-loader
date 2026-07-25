@@ -92,10 +92,16 @@ Select all three certifications in the Privacy practices tab:
 - Uninstalling the extension removes the extension code and its stored
   preferences. Files the user already saved are unaffected.
 
-## 6. Privacy policy text
+## 6. Privacy policy
 
-Publish the following text at a stable, publicly accessible HTTPS URL and enter
-that URL in the Developer Dashboard:
+**Published at:**
+<https://pythongod.github.io/sharepoint-loader/privacy.html>
+
+That page is served by GitHub Pages from [`docs/privacy.html`](privacy.html) on
+`main`, so it is versioned with the code and updates when the extension does.
+Enter that URL in the Developer Dashboard's privacy-policy field.
+
+The published wording follows; keep the two in step when either changes.
 
 > **SharePoint Loader Privacy Policy**  
 > Last updated: July 25, 2026
@@ -123,11 +129,13 @@ that URL in the Developer Dashboard:
 > retains no copy of them and no other data. Uninstalling the extension removes
 > its code and your stored preferences.
 >
-> For privacy questions, contact: **[INSERT SUPPORT EMAIL BEFORE PUBLISHING]**
+> For any privacy question, please open an issue at
+> <https://github.com/pythongod/sharepoint-loader/issues>.
 
-Replace the bracketed support address and publish the policy before submission.
-The Web Store listing's privacy-policy field must contain the resulting public
-URL, not this repository file's URL unless it is served as an HTTPS web page.
+The contact point is the public issue tracker rather than an email address, so
+no personal address is exposed on the listing. The Developer Dashboard's
+privacy-policy field must contain the published HTTPS URL above, not this
+repository file's URL.
 
 ## 7. Prominent disclosure
 
@@ -140,8 +148,10 @@ extension's stated purpose.
 
 ## 8. Pre-submission checklist
 
-- [ ] Replace the privacy policy's support-email placeholder.
-- [ ] Publish the privacy policy at a stable public HTTPS URL.
+- [x] Give the privacy policy a working contact point — the public issue
+      tracker.
+- [x] Publish the privacy policy at a stable public HTTPS URL —
+      <https://pythongod.github.io/sharepoint-loader/privacy.html>.
 - [ ] Enter that URL in the Developer Dashboard.
 - [ ] Confirm the assigned extension ID in release/publishing configuration.
 - [ ] Regenerate and upload the screenshots and icon from `store-assets/`; the

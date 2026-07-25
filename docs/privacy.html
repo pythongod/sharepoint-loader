@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SharePoint Loader — Privacy Policy</title>
+    <meta
+      name="description"
+      content="Privacy policy for the SharePoint Loader browser extension."
+    />
+    <style>
+      :root { color-scheme: light dark; }
+      body {
+        margin: 0 auto;
+        padding: 48px 24px 96px;
+        max-width: 46rem;
+        color: #1b1b1b;
+        background: #fff;
+        font: 400 16px/1.65 -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+          Helvetica, Arial, sans-serif;
+      }
+      h1 { margin: 0 0 4px; font-size: 1.9rem; line-height: 1.2; }
+      h2 { margin: 2.5rem 0 .5rem; font-size: 1.15rem; }
+      .updated { margin: 0 0 2rem; color: #5c5c5c; font-size: .9rem; }
+      ul { padding-left: 1.25rem; }
+      li { margin: .35rem 0; }
+      a { color: #0f6cbd; }
+      code {
+        padding: .1em .35em;
+        border-radius: 3px;
+        background: #f0f0f0;
+        font-size: .9em;
+      }
+      footer {
+        margin-top: 3rem;
+        padding-top: 1rem;
+        border-top: 1px solid #e3e3e3;
+        color: #5c5c5c;
+        font-size: .9rem;
+      }
+      @media (prefers-color-scheme: dark) {
+        body { color: #e8e8e8; background: #16181c; }
+        .updated, footer { color: #a2a2a2; }
+        code { background: #26292f; }
+        a { color: #6cb6ff; }
+        footer { border-top-color: #2c2f36; }
+      }
+    </style>
+  </head>
+  <body>
+    <h1>SharePoint Loader — Privacy Policy</h1>
+    <p class="updated">Last updated: 26 July 2026</p>
+
+    <p>
+      SharePoint Loader is a browser extension with one purpose: to give you the
+      complete contents of the SharePoint list you are viewing. It can load
+      every item into the page, and it can save the list to a CSV or JSON file
+      on your device.
+    </p>
+
+    <h2>What is collected</h2>
+    <p>
+      Nothing. The extension does not collect, store, sell, or transmit your
+      personal information. It uses no analytics, advertising, remote code,
+      accounts, or external services, and it sends nothing to the developer or
+      to any third party.
+    </p>
+
+    <h2>What the extension does</h2>
+    <ul>
+      <li>
+        To read a list, it calls SharePoint's own API on the site you already
+        have open, using your existing sign-in. These requests go only to that
+        SharePoint site, and they only ever read — the extension never writes
+        to SharePoint.
+      </li>
+      <li>
+        When you choose <strong>Load full list</strong>, it examines page
+        layout and row markers in order to scroll the list and report progress.
+      </li>
+      <li>
+        All of this happens in your browser. List contents exist only in the
+        open page's memory and are discarded when the page is closed or
+        reloaded.
+      </li>
+    </ul>
+
+    <h2>Permissions</h2>
+    <ul>
+      <li>
+        <strong>Access to SharePoint sites</strong>
+        (<code>*.sharepoint.com</code>, <code>*.sharepoint.cn</code>,
+        <code>*.sharepoint.de</code>, <code>*.sharepoint.us</code>) — needed to
+        add the extension's panel to list pages and to read the list you are
+        viewing. Every Microsoft 365 tenant has its own SharePoint subdomain,
+        which is why the match is broad. The extension does not run on any
+        other site.
+      </li>
+      <li>
+        <strong><code>storage</code></strong> — stores your preferences only:
+        items per request, folder crawl limits, CSV delimiter and byte order
+        mark, whether dates are shown in UTC, and the timings used when loading
+        a list by scrolling. Chrome may sync these between your own signed-in
+        Chrome profiles. No list content is stored.
+      </li>
+    </ul>
+
+    <h2>Files you export</h2>
+    <p>
+      Exported files are saved by your browser wherever you choose. They may
+      contain whatever your list contains, including names or email addresses
+      held in that list. The extension keeps no copy of them, and they are never
+      sent anywhere.
+    </p>
+
+    <h2>Retention and deletion</h2>
+    <p>
+      The extension retains no user data. Uninstalling it removes its code and
+      your stored preferences. Files you have already saved are unaffected and
+      remain yours to delete.
+    </p>
+
+    <h2>Changes to this policy</h2>
+    <p>
+      If the extension's behaviour changes, this page is updated along with it.
+      The date above reflects the most recent revision, and the full history is
+      public in the
+      <a href="https://github.com/pythongod/sharepoint-loader">source repository</a>.
+    </p>
+
+    <h2>Contact</h2>
+    <p>
+      For any privacy question, please open an issue at
+      <a href="https://github.com/pythongod/sharepoint-loader/issues"
+        >github.com/pythongod/sharepoint-loader/issues</a
+      >.
+    </p>
+
+    <footer>
+      SharePoint Loader is an independent utility and is not affiliated with,
+      endorsed by, or sponsored by Microsoft. Microsoft and SharePoint are
+      trademarks of the Microsoft group of companies.
+    </footer>
+  </body>
+</html>
