@@ -22,10 +22,15 @@ jobs:
         with:
           node-version: 22
 
-      - name: Install Cairo
+      - name: Install Cairo and the font the generator asks for
         run: |
           sudo apt-get update
-          sudo apt-get install --no-install-recommends -y libcairo2
+          # fonts-dejavu-core is not optional: the generator selects
+          # "DejaVu Sans" through Cairo's toy font API, which silently
+          # substitutes another face when the requested one is absent. Missing
+          # it yields wrong artwork and a green build.
+          sudo apt-get install --no-install-recommends -y libcairo2 fonts-dejavu-core fontconfig
+          fc-list | grep -qi 'DejaVuSans' || { echo 'DejaVu Sans is missing' >&2; exit 1; }
 
       - name: Generate artwork
         run: npm run store-assets
