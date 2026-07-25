@@ -26,6 +26,24 @@ CAIRO.cairo_show_text.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
 CAIRO.cairo_surface_write_to_png.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
 CAIRO.cairo_surface_destroy.argtypes = [ctypes.c_void_p]
 CAIRO.cairo_destroy.argtypes = [ctypes.c_void_p]
+CAIRO.cairo_new_sub_path.argtypes = [ctypes.c_void_p]
+CAIRO.cairo_close_path.argtypes = [ctypes.c_void_p]
+
+
+class TextExtents(ctypes.Structure):
+    """cairo_text_extents_t, so button labels can be centred on real metrics."""
+
+    _fields_ = [
+        ("x_bearing", ctypes.c_double),
+        ("y_bearing", ctypes.c_double),
+        ("width", ctypes.c_double),
+        ("height", ctypes.c_double),
+        ("x_advance", ctypes.c_double),
+        ("y_advance", ctypes.c_double),
+    ]
+
+
+CAIRO.cairo_text_extents.argtypes = [ctypes.c_void_p, ctypes.c_char_p, ctypes.POINTER(TextExtents)]
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "store-assets"
@@ -66,6 +84,56 @@ def circle(ctx, x, y, radius, fill):
     CAIRO.cairo_fill(ctx)
 
 
+def measure(ctx, value, size, bold=False):
+    CAIRO.cairo_select_font_face(ctx, b"DejaVu Sans", 0, 1 if bold else 0)
+    CAIRO.cairo_set_font_size(ctx, size)
+    extents = TextExtents()
+    CAIRO.cairo_text_extents(ctx, value.encode("utf-8"), ctypes.byref(extents))
+    return extents.x_advance
+
+
+def text_centered(ctx, center_x, y, value, size, fill="#17253b", bold=False):
+    text(ctx, center_x - measure(ctx, value, size, bold) / 2, y, value, size, fill, bold)
+
+
+def rounded_path(ctx, x, y, width, height, radius):
+    right = x + width - radius
+    bottom = y + height - radius
+    CAIRO.cairo_new_sub_path(ctx)
+    CAIRO.cairo_arc(ctx, right, y + radius, radius, -1.5708, 0)
+    CAIRO.cairo_arc(ctx, right, bottom, radius, 0, 1.5708)
+    CAIRO.cairo_arc(ctx, x + radius, bottom, radius, 1.5708, 3.1416)
+    CAIRO.cairo_arc(ctx, x + radius, y + radius, radius, 3.1416, 4.7124)
+    CAIRO.cairo_close_path(ctx)
+
+
+def rounded_rect(ctx, x, y, width, height, radius, fill=None, border=None, border_width=1):
+    if fill:
+        color(ctx, fill)
+        rounded_path(ctx, x, y, width, height, radius)
+        CAIRO.cairo_fill(ctx)
+    if border:
+        color(ctx, border)
+        CAIRO.cairo_set_line_width(ctx, border_width)
+        rounded_path(ctx, x, y, width, height, radius)
+        CAIRO.cairo_stroke(ctx)
+
+
+def button(ctx, x, y, width, label, primary=True, disabled=False):
+    """Matches the panel's own styling: filled primary, outlined secondary."""
+    height = 32
+    if disabled:
+        fill = "#a7c8e4" if primary else "#ffffff"
+        edge = "#a7c8e4"
+        ink = "#ffffff" if primary else "#a7c8e4"
+    elif primary:
+        fill, edge, ink = "#0f6cbd", "#0f6cbd", "#ffffff"
+    else:
+        fill, edge, ink = "#ffffff", "#0f6cbd", "#0f6cbd"
+    rounded_rect(ctx, x, y, width, height, 4, fill, edge)
+    text_centered(ctx, x + width / 2, y + 21, label, 13, ink, True)
+
+
 def canvas(width, height, filename, painter):
     surface = CAIRO.cairo_image_surface_create(0, width, height)
     ctx = CAIRO.cairo_create(surface)
@@ -76,14 +144,16 @@ def canvas(width, height, filename, painter):
 
 
 def logo(ctx, x, y, size):
-    rect(ctx, x, y, size, size, "#0f6cbd")
-    rect(ctx, x + size * .18, y + size * .22, size * .64, size * .12, "#ffffff")
-    rect(ctx, x + size * .18, y + size * .44, size * .48, size * .12, "#ffffff")
-    rect(ctx, x + size * .18, y + size * .66, size * .32, size * .12, "#ffffff")
-    color(ctx, "#41c7a5")
-    CAIRO.cairo_move_to(ctx, x + size * .68, y + size * .50)
-    CAIRO.cairo_line_to(ctx, x + size * .88, y + size * .70)
-    CAIRO.cairo_line_to(ctx, x + size * .68, y + size * .90)
+    """Mirrors icons/icon-*.png so the store icon matches the installed one."""
+    rounded_rect(ctx, x, y, size, size, size * .16, "#0f6cbd")
+    rect(ctx, x + size * .22, y + size * .22, size * .56, size * .09, "#ffffff")
+    rect(ctx, x + size * .22, y + size * .37, size * .44, size * .09, "#ffffff")
+    rect(ctx, x + size * .22, y + size * .52, size * .32, size * .09, "#ffffff")
+    color(ctx, "#ffffff")
+    CAIRO.cairo_move_to(ctx, x + size * .42, y + size * .62)
+    CAIRO.cairo_line_to(ctx, x + size * .82, y + size * .62)
+    CAIRO.cairo_line_to(ctx, x + size * .62, y + size * .82)
+    CAIRO.cairo_close_path(ctx)
     CAIRO.cairo_fill(ctx)
 
 
@@ -116,16 +186,69 @@ def sharepoint_mock(ctx, running=False):
         text(ctx, 338, y + 3, name, 14)
         text(ctx, 837, y + 3, f"July {22-index}, 2026", 13, "#536579")
         text(ctx, 1030, y + 3, "Project team", 13, "#536579")
-    rect(ctx, 1002, 685, 209, 46, "#0f6cbd")
-    text(ctx, 1025, 714, "Loading... 128" if running else "Load full list", 15, "#ffffff", True)
+    panel(ctx, running)
+
+
+def panel(ctx, running=False):
+    """The extension's own panel, as src/panel.js renders it."""
+    x, width = 960, 300
+    height = 248 if running else 224
+    y = 780 - height
+    inner = x + 16
+    content = width - 32
+
+    color(ctx, "#000000", .16)
+    rounded_path(ctx, x + 2, y + 4, width, height, 6)
+    CAIRO.cairo_fill(ctx)
+    rounded_rect(ctx, x, y, width, height, 6, "#ffffff", "#d1d1d1")
+
+    text(ctx, inner, y + 25, "SharePoint Loader", 13, "#242424", True)
+    # Drawn rather than typed: DejaVu Sans coverage of U+2699 and U+2715 is not
+    # guaranteed, and a missing glyph would silently render as tofu.
+    gear_x, gear_y = x + width - 46, y + 20
+    circle(ctx, gear_x, gear_y, 6, "#616161")
+    circle(ctx, gear_x, gear_y, 2.5, "#ffffff")
+    close_x, close_y = x + width - 24, y + 20
+    for dx, dy in ((-4, -4), (-4, 4)):
+        line(ctx, close_x + dx, close_y + dy, close_x - dx, close_y - dy, "#616161", 1.5)
+    line(ctx, x, y + 38, x + width, y + 38, "#ededed")
+
+    text(ctx, inner, y + 62, "Documents · 8,300 items", 12, "#616161")
+
+    button(ctx, inner, y + 76, content, "Load full list", True, running)
+    half = (content - 6) / 2
+    button(ctx, inner, y + 116, half, "Export CSV", False, running)
+    button(ctx, inner + half + 6, y + 116, half, "Export JSON", False, running)
+
+    check_y = y + 160
+    rounded_rect(ctx, inner, check_y, 14, 14, 2, "#0f6cbd" if running else "#ffffff", "#8a8886")
+    if running:
+        color(ctx, "#ffffff")
+        CAIRO.cairo_set_line_width(ctx, 2)
+        CAIRO.cairo_move_to(ctx, inner + 3, check_y + 7)
+        CAIRO.cairo_line_to(ctx, inner + 6, check_y + 10)
+        CAIRO.cairo_line_to(ctx, inner + 11, check_y + 4)
+        CAIRO.cairo_stroke(ctx)
+    text(ctx, inner + 22, check_y + 12, "Include subfolders", 12, "#242424")
+
+    if running:
+        button(ctx, inner, y + 186, content, "Stop", True)
+        text(ctx, inner, y + 236, "2,910 found · scanning Archive/2019", 12, "#616161")
+    else:
+        text(ctx, inner, y + 204, "Idle", 12, "#616161")
 
 
 def screenshot(ctx, _, __, running=False):
     sharepoint_mock(ctx, running)
     rect(ctx, 0, 0, 1280, 108, "#092e54")
     logo(ctx, 30, 24, 60)
-    text(ctx, 116, 54, "See progress as your list loads" if running else "Load every item with one click", 29, "#ffffff", True)
-    text(ctx, 117, 82, "Stop at any time — no setup required" if running else "Built for long SharePoint lists and libraries", 16, "#cfe7fb")
+    text(ctx, 116, 54,
+         "Real progress, and stop whenever" if running else "Load the whole list, or export it",
+         29, "#ffffff", True)
+    text(ctx, 117, 82,
+         "Walk every subfolder and save the lot" if running
+         else "Every item in the page, or as a CSV or JSON file",
+         16, "#cfe7fb")
 
 
 def icon(ctx, _, __):
@@ -140,11 +263,11 @@ def promo(ctx, _, __):
     logo(ctx, 30, 36, 72)
     text(ctx, 30, 150, "SharePoint", 35, "#ffffff", True)
     text(ctx, 30, 192, "Loader", 35, "#ffffff", True)
-    text(ctx, 31, 232, "Load the full list. One click.", 16, "#cfe7fb")
+    text(ctx, 31, 232, "The whole list. In the page, or as a file.", 15, "#cfe7fb")
 
 
 canvas(128, 128, "icon-128.png", icon)
-canvas(1280, 800, "screenshot-load-full-list.png", lambda c, w, h: screenshot(c, w, h, False))
-canvas(1280, 800, "screenshot-loading-progress.png", lambda c, w, h: screenshot(c, w, h, True))
+canvas(1280, 800, "screenshot-panel.png", lambda c, w, h: screenshot(c, w, h, False))
+canvas(1280, 800, "screenshot-export-progress.png", lambda c, w, h: screenshot(c, w, h, True))
 canvas(440, 280, "small-promo-tile.png", promo)
 print(f"Generated Chrome Web Store artwork in {OUT}")

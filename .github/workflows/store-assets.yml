@@ -37,7 +37,7 @@ jobs:
 
       - name: Verify artwork
         run: |
-          expected="icon-128.png screenshot-load-full-list.png screenshot-loading-progress.png small-promo-tile.png"
+          expected="icon-128.png screenshot-panel.png screenshot-export-progress.png small-promo-tile.png"
           for name in $expected; do
             file="store-assets/$name"
             test -f "$file" || { echo "missing $file" >&2; exit 1; }

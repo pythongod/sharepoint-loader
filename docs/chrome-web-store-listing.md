@@ -68,15 +68,14 @@ upload the files to the Developer Dashboard. It is not generated locally: the
 generator loads Cairo by its Linux shared-object name and will not run on
 macOS or Windows.
 
-**The screenshots still depict the previous single-button interface.**
-`scripts/generate-store-assets.py` draws that older UI and must be updated to
-draw the current panel before the next submission — regenerating alone will
-not fix it.
+The screenshots depict the current panel, including the export actions and the
+"Include subfolders" option. The store icon is drawn from the same shapes as
+the extension's toolbar icon, so the two match.
 
 Upload order:
 
-1. `screenshot-load-full-list.png` — "Load every item, or export the list"
-2. `screenshot-loading-progress.png` — "See real progress and stop at any time"
+1. `screenshot-panel.png` — "Load the whole list, or export it"
+2. `screenshot-export-progress.png` — "Real progress, and stop whenever"
 3. `icon-128.png` — store icon
 4. `small-promo-tile.png` — optional small promotional tile
 
