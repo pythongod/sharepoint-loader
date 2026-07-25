@@ -1,0 +1,54 @@
+name: Generate store assets
+
+# The generator draws with Cairo, loaded by its Linux shared-object name, so it
+# only runs on Linux. Producing the artwork here instead of on a contributor's
+# machine keeps that toolchain pinned to one known environment and removes the
+# local dependency entirely.
+
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Cairo and the font the generator asks for
+        run: |
+          sudo apt-get update
+          # fonts-dejavu-core is not optional: the generator selects
+          # "DejaVu Sans" through Cairo's toy font API, which silently
+          # substitutes another face when the requested one is absent. Missing
+          # it yields wrong artwork and a green build.
+          sudo apt-get install --no-install-recommends -y libcairo2 fonts-dejavu-core fontconfig
+          fc-list | grep -qi 'DejaVuSans' || { echo 'DejaVu Sans is missing' >&2; exit 1; }
+
+      - name: Generate artwork
+        run: npm run store-assets
+
+      - name: Verify artwork
+        run: |
+          expected="icon-128.png screenshot-load-full-list.png screenshot-loading-progress.png small-promo-tile.png"
+          for name in $expected; do
+            file="store-assets/$name"
+            test -f "$file" || { echo "missing $file" >&2; exit 1; }
+            # A truncated or non-PNG file would still satisfy test -f.
+            file --brief --mime-type "$file" | grep -Fxq image/png \
+              || { echo "$file is not a PNG" >&2; exit 1; }
+            echo "$(file --brief "$file")  <-  $name"
+          done
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: store-assets
+          path: store-assets/*.png
+          if-no-files-found: error
