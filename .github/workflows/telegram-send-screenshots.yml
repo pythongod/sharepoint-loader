@@ -1,0 +1,51 @@
+name: Send store screenshots to Telegram
+
+# The artwork is not committed — it is drawn on demand — so this workflow draws
+# a fresh set and sends it, rather than reading files from the checkout.
+
+on: workflow_dispatch
+
+permissions:
+  contents: read
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - uses: ./.github/actions/store-assets
+
+      - name: Send screenshots
+        env:
+          BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          THREAD_ID: ${{ secrets.TELEGRAM_THREAD_ID }}
+        run: |
+          test -n "$BOT_TOKEN" || { echo 'TELEGRAM_BOT_TOKEN is required.' >&2; exit 1; }
+          test -n "$CHAT_ID" || { echo 'TELEGRAM_CHAT_ID is required.' >&2; exit 1; }
+          VERSION="$(jq -er .version manifest.json)"
+          response="$(mktemp)"; trap 'rm -f "$response"' EXIT
+          shopt -s nullglob
+          assets=(store-assets/*.png)
+          test "${#assets[@]}" -gt 0 || { echo 'No artwork to send.' >&2; exit 1; }
+          for asset in "${assets[@]}"; do
+            # sendDocument rather than sendPhoto: Telegram re-encodes photos,
+            # and these need to survive intact for a store upload.
+            args=(--fail-with-body --silent --show-error -X POST
+              "https://api.telegram.org/bot${BOT_TOKEN}/sendDocument"
+              -F chat_id="$CHAT_ID"
+              -F document="@${asset};type=image/png"
+              -F "caption=SharePoint Loader v${VERSION} — $(basename "$asset")")
+            [[ -z "$THREAD_ID" ]] || args+=(-F message_thread_id="$THREAD_ID")
+            if ! curl "${args[@]}" >"$response"; then
+              jq -r '.description // "Telegram request failed"' "$response" >&2
+              exit 1
+            fi
+            jq -e '.ok == true' "$response" >/dev/null \
+              || { jq -r '.description // "Telegram rejected the request"' "$response" >&2; exit 1; }
+            echo "sent $(basename "$asset")"
+          done
