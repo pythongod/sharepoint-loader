@@ -113,6 +113,99 @@ test('returns null for a list form rather than a view', () => {
   );
 });
 
+// OneDrive for Business, and increasingly SharePoint libraries, render through
+// /_layouts/15/onedrive.aspx, where the path names no library at all — the
+// list has to come from the id parameter instead.
+
+test('resolves a OneDrive for Business root', () => {
+  assert.deepStrictEqual(
+    url.parse('https://contoso-my.sharepoint.com/personal/ada_contoso_com/_layouts/15/onedrive.aspx'),
+    {
+      origin: 'https://contoso-my.sharepoint.com',
+      webUrl: '/personal/ada_contoso_com',
+      listUrl: '/personal/ada_contoso_com/Documents',
+      folderUrl: '/personal/ada_contoso_com/Documents',
+      viewId: null,
+    }
+  );
+});
+
+test('resolves a OneDrive for Business subfolder from the id parameter', () => {
+  const parsed = url.parse(
+    'https://contoso-my.sharepoint.com/personal/ada_contoso_com/_layouts/15/onedrive.aspx' +
+      '?id=%2Fpersonal%2Fada_contoso_com%2FDocuments%2FProjects%2F2026'
+  );
+
+  assert.strictEqual(parsed.listUrl, '/personal/ada_contoso_com/Documents');
+  assert.strictEqual(parsed.folderUrl, '/personal/ada_contoso_com/Documents/Projects/2026');
+});
+
+test('resolves a OneDrive view of a team site library', () => {
+  const parsed = url.parse(
+    'https://contoso.sharepoint.com/sites/team/_layouts/15/onedrive.aspx' +
+      '?id=%2Fsites%2Fteam%2FShared%20Documents%2FReports'
+  );
+
+  assert.strictEqual(parsed.webUrl, '/sites/team');
+  assert.strictEqual(parsed.listUrl, '/sites/team/Shared Documents');
+  assert.strictEqual(parsed.folderUrl, '/sites/team/Shared Documents/Reports');
+});
+
+test('decodes a plus-encoded space in the id parameter', () => {
+  const parsed = url.parse(
+    'https://contoso.sharepoint.com/sites/team/_layouts/15/onedrive.aspx' +
+      '?id=%2Fsites%2Fteam%2FShared+Documents%2FReports'
+  );
+
+  assert.strictEqual(parsed.listUrl, '/sites/team/Shared Documents');
+});
+
+test('resolves a OneDrive view at the root web', () => {
+  const parsed = url.parse(
+    'https://contoso.sharepoint.com/_layouts/15/onedrive.aspx?id=%2FShared%20Documents'
+  );
+
+  assert.strictEqual(parsed.webUrl, '/');
+  assert.strictEqual(parsed.listUrl, '/Shared Documents');
+});
+
+test('keeps the view id on a OneDrive view', () => {
+  const parsed = url.parse(
+    'https://contoso-my.sharepoint.com/personal/ada_contoso_com/_layouts/15/onedrive.aspx' +
+      '?id=%2Fpersonal%2Fada_contoso_com%2FDocuments&viewid=1a2b3c4d-0000-0000-0000-000000000001'
+  );
+
+  assert.strictEqual(parsed.viewId, '1a2b3c4d-0000-0000-0000-000000000001');
+});
+
+test('returns null for a team site OneDrive view with no id to identify the library', () => {
+  assert.strictEqual(
+    url.parse('https://contoso.sharepoint.com/sites/team/_layouts/15/onedrive.aspx'),
+    null
+  );
+});
+
+test('returns null for an id that does not sit under the web', () => {
+  assert.strictEqual(
+    url.parse(
+      'https://contoso.sharepoint.com/sites/team/_layouts/15/onedrive.aspx' +
+        '?id=%2Fsites%2Fother%2FShared%20Documents'
+    ),
+    null
+  );
+});
+
+test('returns null for other _layouts pages', () => {
+  assert.strictEqual(
+    url.parse('https://contoso.sharepoint.com/sites/team/_layouts/15/settings.aspx'),
+    null
+  );
+  assert.strictEqual(
+    url.parse('https://contoso.sharepoint.com/sites/team/_layouts/15/viewlsts.aspx'),
+    null
+  );
+});
+
 test('ignores an id parameter belonging to a different list', () => {
   const parsed = url.parse(
     'https://contoso.sharepoint.com/sites/team/Shared%20Documents/Forms/AllItems.aspx' +
