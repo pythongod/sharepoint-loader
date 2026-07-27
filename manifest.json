@@ -1,9 +1,11 @@
 {
   "manifest_version": 3,
   "name": "SharePoint Loader",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Load every item of a SharePoint list in the page, or export the whole list to CSV or JSON.",
-  "permissions": ["storage"],
+  "permissions": [
+    "storage"
+  ],
   "options_page": "src/options.html",
   "background": {
     "service_worker": "src/background.js"
