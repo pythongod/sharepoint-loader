@@ -207,10 +207,45 @@ values as repository secrets—never in workflow inputs or tracked files:
 | `TELEGRAM_CHAT_ID` | Optional target chat, channel, or group ID. |
 | `TELEGRAM_THREAD_ID` | Optional forum-topic ID; omit it to post to the main chat. |
 
-If OAuth returns `invalid_client`, confirm that `CHROME_CLIENT_ID` and
-`CHROME_CLIENT_SECRET` belong to the same active OAuth client, then regenerate
-`CHROME_REFRESH_TOKEN` with that client while signed in to the correct Chrome Web
-Store developer account.
+### Generating `CHROME_REFRESH_TOKEN`
+
+```sh
+npx chrome-webstore-upload-keys
+```
+
+It opens a Google consent screen; sign in as the developer account that owns
+the Web Store item. It prints a client ID, client secret, and refresh token.
+Store all three as repository secrets — never in a file, a commit, a workflow
+input, or a pull-request comment:
+
+```sh
+gh secret set CHROME_CLIENT_ID
+gh secret set CHROME_CLIENT_SECRET
+gh secret set CHROME_REFRESH_TOKEN
+```
+
+### OAuth failures
+
+The publish workflow prints Google's own error code. The two differ in cause
+and in fix:
+
+| Error | Meaning | Fix |
+| --- | --- | --- |
+| `invalid_grant` | The refresh token is expired, revoked, or was issued by a different OAuth client. | Regenerate it with the command above. |
+| `invalid_client` | `CHROME_CLIENT_ID` and `CHROME_CLIENT_SECRET` do not belong to the same active OAuth client. | Confirm the pair in Google Cloud Console, then regenerate the refresh token with that client. |
+
+A refresh token for an OAuth client still in *Testing* publishing status expires
+after seven days, so a pipeline that worked last week can fail with
+`invalid_grant` having changed nothing. Move the client to *In production* to
+stop that recurring.
+
+### Publication is automatic
+
+A successful **Release** triggers **Publish to Chrome Web Store** through
+`workflow_run`. Once the secrets are valid, bumping the version is therefore
+enough to publish — there is no further confirmation step. If you would rather
+releases and store submissions be separate decisions, remove the `workflow_run`
+trigger from `chrome-web-store-publish.yml` and dispatch it by hand.
 
 ### Browser-only secret setup
 
