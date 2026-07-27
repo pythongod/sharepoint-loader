@@ -4,49 +4,98 @@
     <meta charset="utf-8" />
     <title>SharePoint Loader settings</title>
     <style>
+      :root {
+        color-scheme: light;
+        --bg: #faf9f8;
+        --panel: #ffffff;
+        --fg: #242424;
+        --muted: #616161;
+        --border: #e1dfdd;
+        --control: #8a8886;
+        --accent: #0f6cbd;
+        --accent-ink: #ffffff;
+        --accent-text: #0f6cbd;
+        --ok: #0b6a0b;
+      }
+      /* Follow the system unless the user has pinned a theme below. */
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme='light']) {
+          color-scheme: dark;
+          --bg: #1f1f1f;
+          --panel: #292929;
+          --fg: #f5f5f5;
+          --muted: #adadad;
+          --border: #3d3d3d;
+          --control: #666666;
+          --accent: #115ea3;
+          --accent-ink: #ffffff;
+          --accent-text: #479ef5;
+          --ok: #6ccb5f;
+        }
+      }
+      :root[data-theme='dark'] {
+        color-scheme: dark;
+        --bg: #1f1f1f;
+        --panel: #292929;
+        --fg: #f5f5f5;
+        --muted: #adadad;
+        --border: #3d3d3d;
+        --control: #666666;
+        --accent: #115ea3;
+        --accent-ink: #ffffff;
+        --accent-text: #479ef5;
+        --ok: #6ccb5f;
+      }
       body {
         margin: 0 auto;
         padding: 32px 24px;
         max-width: 620px;
-        color: #242424;
-        background: #faf9f8;
+        color: var(--fg);
+        background: var(--bg);
         font: 400 14px/1.5 -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       }
       h1 { margin: 0 0 4px; font-size: 20px; }
-      p.intro { margin: 0 0 24px; color: #616161; }
+      p.intro { margin: 0 0 24px; color: var(--muted); }
       fieldset {
         margin: 0 0 16px;
         padding: 16px;
-        border: 1px solid #e1dfdd;
+        border: 1px solid var(--border);
         border-radius: 6px;
-        background: #fff;
+        background: var(--panel);
       }
       legend { padding: 0 6px; font-weight: 600; }
       .field { display: grid; gap: 4px; margin-bottom: 14px; }
       .field:last-child { margin-bottom: 0; }
       .field label { font-weight: 600; }
-      .field .hint { color: #616161; font-size: 13px; }
+      .field .hint { color: var(--muted); font-size: 13px; }
       .field.inline { grid-template-columns: auto 1fr; align-items: center; gap: 8px; }
       .field.inline label { font-weight: 400; }
       input[type='number'], select {
         padding: 6px 8px;
         max-width: 220px;
-        border: 1px solid #8a8886;
+        color: var(--fg);
+        background: var(--panel);
+        border: 1px solid var(--control);
         border-radius: 4px;
         font: inherit;
       }
       footer { display: flex; align-items: center; gap: 12px; }
       button {
         padding: 8px 16px;
-        border: 1px solid #0f6cbd;
+        border: 1px solid var(--accent);
         border-radius: 4px;
-        background: #0f6cbd;
-        color: #fff;
+        background: var(--accent);
+        color: var(--accent-ink);
         font: 600 14px/1.2 inherit;
         cursor: pointer;
       }
-      button.secondary { background: #fff; color: #0f6cbd; }
-      #saved { color: #0b6a0b; }
+      button.secondary {
+        background: transparent;
+        color: var(--accent-text);
+        border-color: var(--accent-text);
+      }
+      :focus-visible { outline: 2px solid var(--accent-text); outline-offset: 2px; }
+      #saved { color: var(--ok); }
     </style>
   </head>
   <body>
@@ -55,6 +104,21 @@
       These settings apply to reading and exporting lists. Nothing here is sent
       anywhere; values are stored in your browser profile.
     </p>
+
+    <fieldset>
+      <legend>Appearance</legend>
+      <div class="field">
+        <label for="theme">Theme</label>
+        <select id="theme">
+          <option value="auto">Match my system</option>
+          <option value="light">Light</option>
+          <option value="dark">Dark</option>
+        </select>
+        <span class="hint">
+          Applies to this page and to the panel shown on SharePoint pages.
+        </span>
+      </div>
+    </fieldset>
 
     <fieldset>
       <legend>Reading</legend>
