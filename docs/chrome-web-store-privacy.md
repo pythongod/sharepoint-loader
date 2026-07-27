@@ -18,10 +18,20 @@ fraction of itself, and this extension shows or saves the rest.
 
 ### `storage`
 
-> Stores the user's own preferences: how many items to request per call, folder
-> crawl limits, CSV delimiter and byte order mark, whether dates are shown in
-> UTC, and the timings used when loading a list by scrolling. No list content,
-> browsing activity, or personal data is written to storage.
+> SharePoint Loader stores only the user's own settings, configured on the
+> extension's options page: the number of items requested per API call, folder
+> crawl depth and folder-count limits, whether subfolders are included by
+> default, the CSV delimiter and byte-order-mark option, whether dates are
+> shown in UTC or local time, the timings used when loading a list by
+> scrolling, and the light/dark theme preference. `chrome.storage.sync` is used
+> so these preferences follow the user between their own signed-in Chrome
+> profiles. No list content, file data, browsing history, or personal
+> information is written to storage, and nothing stored is transmitted
+> anywhere.
+
+This must list everything the extension actually stores. The authoritative
+list is `SPL.settings.defaults` in [`src/settings.js`](../src/settings.js);
+adding a setting means updating this paragraph in the same change.
 
 ### Site access / content-script matches
 
