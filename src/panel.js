@@ -5,47 +5,102 @@
 (function (SPL) {
   const HOST_ID = 'sharepoint-loader-panel';
 
+  // Colours live in custom properties so the dark palette is one override
+  // rather than a second copy of the stylesheet. `all: initial` does not reset
+  // custom properties, so the two rules below coexist.
   const STYLE = `
     :host { all: initial; }
+    :host {
+      color-scheme: light;
+      --bg: #ffffff;
+      --fg: #242424;
+      --muted: #616161;
+      --line: #ededed;
+      --border: #d1d1d1;
+      --hover: #f0f0f0;
+      --accent: #0f6cbd;
+      --accent-ink: #ffffff;
+      --accent-text: #0f6cbd;
+      --danger: #a4262c;
+      --shadow: rgba(0,0,0,.2);
+    }
+    /* Follow the system unless the user has pinned a theme. */
+    @media (prefers-color-scheme: dark) {
+      :host(:not([data-theme="light"])) {
+        color-scheme: dark;
+        --bg: #292929;
+        --fg: #f5f5f5;
+        --muted: #adadad;
+        --line: #3d3d3d;
+        --border: #4a4a4a;
+        --hover: #3d3d3d;
+        --accent: #115ea3;
+        --accent-ink: #ffffff;
+        --accent-text: #479ef5;
+        --danger: #f1707b;
+        --shadow: rgba(0,0,0,.5);
+      }
+    }
+    :host([data-theme="dark"]) {
+      color-scheme: dark;
+      --bg: #292929;
+      --fg: #f5f5f5;
+      --muted: #adadad;
+      --line: #3d3d3d;
+      --border: #4a4a4a;
+      --hover: #3d3d3d;
+      --accent: #115ea3;
+      --accent-ink: #ffffff;
+      --accent-text: #479ef5;
+      --danger: #f1707b;
+      --shadow: rgba(0,0,0,.5);
+    }
     .panel {
       position: fixed; right: 20px; bottom: 20px; z-index: 2147483647;
       box-sizing: border-box; min-width: 260px;
       font: 400 13px/1.45 -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      color: #242424; background: #fff;
-      border: 1px solid #d1d1d1; border-radius: 6px;
-      box-shadow: 0 4px 16px rgba(0,0,0,.2);
+      color: var(--fg); background: var(--bg);
+      border: 1px solid var(--border); border-radius: 6px;
+      box-shadow: 0 4px 16px var(--shadow);
     }
     .pill {
       position: fixed; right: 20px; bottom: 20px; z-index: 2147483647;
-      padding: 10px 16px; border: 1px solid #0f6cbd; border-radius: 4px;
-      background: #0f6cbd; color: #fff; cursor: pointer;
+      padding: 10px 16px; border: 1px solid var(--accent); border-radius: 4px;
+      background: var(--accent); color: var(--accent-ink); cursor: pointer;
       font: 600 14px/20px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      box-shadow: 0 2px 8px rgba(0,0,0,.25);
+      box-shadow: 0 2px 8px var(--shadow);
     }
     header {
       display: flex; align-items: center; gap: 8px;
-      padding: 10px 12px; border-bottom: 1px solid #ededed;
+      padding: 10px 12px; border-bottom: 1px solid var(--line);
     }
     header h1 { flex: 1; margin: 0; font-size: 13px; font-weight: 600; }
     header button {
       padding: 2px 6px; border: 0; border-radius: 3px;
-      background: transparent; color: #616161; cursor: pointer; font-size: 13px;
+      background: transparent; color: var(--muted); cursor: pointer; font-size: 13px;
     }
-    header button:hover { background: #f0f0f0; }
+    header button:hover { background: var(--hover); }
+    /* .actions sets display, which outranks the user-agent [hidden] rule and
+       would leave Stop and Save partial permanently on screen. */
+    [hidden] { display: none !important; }
     .body { padding: 12px; display: grid; gap: 8px; }
-    .subtitle { color: #616161; }
+    .subtitle { color: var(--muted); }
     .actions { display: flex; flex-wrap: wrap; gap: 6px; }
     .actions button {
       flex: 1 1 auto; padding: 7px 12px; border-radius: 4px; cursor: pointer;
-      border: 1px solid #0f6cbd; background: #0f6cbd; color: #fff;
+      border: 1px solid var(--accent); background: var(--accent); color: var(--accent-ink);
       font: 600 13px/1.2 inherit;
     }
-    .actions button.secondary { background: #fff; color: #0f6cbd; }
+    .actions button.secondary {
+      background: transparent; color: var(--accent-text); border-color: var(--accent-text);
+    }
     .actions button:disabled { opacity: .5; cursor: default; }
-    label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
-    .status { padding-top: 2px; color: #616161; }
-    .status.error { color: #a4262c; }
-    button:focus-visible, label:focus-within { outline: 2px solid #0f6cbd; outline-offset: 2px; }
+    label { display: flex; align-items: center; gap: 6px; cursor: pointer; color: var(--fg); }
+    .status { padding-top: 2px; color: var(--muted); }
+    .status.error { color: var(--danger); }
+    button:focus-visible, label:focus-within {
+      outline: 2px solid var(--accent-text); outline-offset: 2px;
+    }
   `;
 
   SPL.panel = {
@@ -65,7 +120,7 @@
       root.append(style);
 
       const view = render(root);
-      const controller = createController(view, context);
+      const controller = createController(view, context, host);
 
       (document.body || document.documentElement).append(host);
 
@@ -139,7 +194,7 @@
     };
   }
 
-  function createController(view, initialContext) {
+  function createController(view, initialContext, host) {
     let context = initialContext;
     let settings = SPL.settings.defaults;
     let running = false;
@@ -168,10 +223,25 @@
       view.partialRow.hidden = false;
     };
 
+    // 'auto' leaves the attribute off, which lets the prefers-color-scheme
+    // rule decide; a pinned theme sets it and wins.
+    const applyTheme = (theme) => {
+      if (theme === 'auto') host.removeAttribute('data-theme');
+      else host.setAttribute('data-theme', theme);
+    };
+
     SPL.settings.load().then((loaded) => {
       settings = loaded;
       view.recursive.checked = loaded.includeSubfoldersByDefault;
+      applyTheme(loaded.theme);
     });
+
+    // Reflect a theme change made on the options page without a reload.
+    if (globalThis.chrome && chrome.storage && chrome.storage.onChanged) {
+      chrome.storage.onChanged.addListener((changes, area) => {
+        if (area === 'sync' && changes.theme) applyTheme(changes.theme.newValue);
+      });
+    }
 
     view.pill.addEventListener('click', () => {
       view.pill.hidden = true;

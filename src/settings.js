@@ -13,6 +13,7 @@
     includeSubfoldersByDefault: false,
     scrollSettleMs: 2500,
     scrollMaxRunMs: 300000,
+    theme: 'auto',
   });
 
   const clampInteger = (min, max) => (value) =>
@@ -33,6 +34,7 @@
     includeSubfoldersByDefault: boolean,
     scrollSettleMs: clampInteger(250, 60000),
     scrollMaxRunMs: clampInteger(1000, 3600000),
+    theme: oneOf(['auto', 'light', 'dark']),
   };
 
   SPL.settings = {

@@ -17,7 +17,19 @@ test('exposes the documented defaults', () => {
     includeSubfoldersByDefault: false,
     scrollSettleMs: 2500,
     scrollMaxRunMs: 300000,
+    theme: 'auto',
   });
+});
+
+test('accepts each supported theme', () => {
+  assert.strictEqual(settings.merge({ theme: 'dark' }).theme, 'dark');
+  assert.strictEqual(settings.merge({ theme: 'light' }).theme, 'light');
+  assert.strictEqual(settings.merge({ theme: 'auto' }).theme, 'auto');
+});
+
+test('falls back to following the system for an unknown theme', () => {
+  assert.strictEqual(settings.merge({ theme: 'midnight' }).theme, 'auto');
+  assert.strictEqual(settings.merge({ theme: true }).theme, 'auto');
 });
 
 test('merges stored values over the defaults', () => {

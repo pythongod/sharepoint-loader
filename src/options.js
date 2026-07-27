@@ -6,6 +6,12 @@
   const keys = Object.keys(SPL.settings.defaults);
   const field = (key) => document.getElementById(key);
 
+  // 'auto' leaves the attribute off so the prefers-color-scheme rule decides.
+  function applyTheme(theme) {
+    if (theme === 'auto') document.documentElement.removeAttribute('data-theme');
+    else document.documentElement.setAttribute('data-theme', theme);
+  }
+
   function show(values) {
     for (const key of keys) {
       const input = field(key);
@@ -15,6 +21,8 @@
       if (input.type === 'checkbox') input.checked = values[key];
       else input.value = values[key];
     }
+
+    applyTheme(values.theme);
   }
 
   function read() {
@@ -41,6 +49,9 @@
       saved.textContent = '';
     }, 2000);
   }
+
+  // Preview the theme as it is chosen; saving is what makes it stick.
+  field('theme').addEventListener('change', (event) => applyTheme(event.target.value));
 
   document.getElementById('save').addEventListener('click', async () => {
     // merge clamps and rejects bad values, so redisplay what was actually kept.
