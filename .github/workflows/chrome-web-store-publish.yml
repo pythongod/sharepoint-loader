@@ -1,5 +1,12 @@
 name: Publish to Chrome Web Store
 
+# Names the run after what it is publishing, so a list of runs can be read
+# without opening each one.
+run-name: >-
+  ${{ github.event_name == 'workflow_run' && 'Publish new release to Chrome Web Store'
+  || (inputs.use_latest_release && 'Publish latest release to Chrome Web Store'
+  || format('Publish {0} to Chrome Web Store', inputs.release_tag)) }}
+
 on:
   workflow_run:
     workflows: [Release]
@@ -41,7 +48,7 @@ jobs:
       SKIP_UPLOAD: ${{ github.event_name == 'workflow_dispatch' && inputs.skip_upload || false }}
     steps:
       - name: Check out release source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
       - name: Resolve release
