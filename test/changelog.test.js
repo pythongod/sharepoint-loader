@@ -98,3 +98,34 @@ test('parses a prerelease version correctly', () => {
   assert.strictEqual(entry.version, '0.3.4-beta');
   assert.strictEqual(entry.date, '2026-07-28');
 });
+
+// Changelog prose is hard-wrapped in the file. Without joining, one sentence
+// spanning three source lines renders as three separate bullet points.
+
+test('joins a hard-wrapped paragraph into one entry', () => {
+  const [entry] = changelog.highlights(
+    '## 0.3.4\n\nThe version now appears in the tooltip,\nin the panel, and on the settings page.\n'
+  );
+
+  assert.deepStrictEqual(entry.lines, [
+    'The version now appears in the tooltip, in the panel, and on the settings page.',
+  ]);
+});
+
+test('keeps separate paragraphs separate', () => {
+  const [entry] = changelog.highlights('## 0.3.4\n\nFirst para\nwrapped.\n\nSecond para.\n');
+
+  assert.deepStrictEqual(entry.lines, ['First para wrapped.', 'Second para.']);
+});
+
+test('keeps bullets separate from each other and from prose', () => {
+  const [entry] = changelog.highlights(
+    '## 0.3.4\n\nIntro line\nwrapped.\n\n- First point\n  continued.\n- Second point.\n'
+  );
+
+  assert.deepStrictEqual(entry.lines, [
+    'Intro line wrapped.',
+    'First point continued.',
+    'Second point.',
+  ]);
+});

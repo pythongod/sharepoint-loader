@@ -18,6 +18,19 @@
 
       let current = null;
       let collecting = false;
+      // Set while a paragraph or bullet is still being built, so the next
+      // source line can be appended to it rather than starting a new one.
+      let open = false;
+
+      // Prose in the file is hard-wrapped, so a single sentence spans several
+      // source lines. Joining them keeps one thought as one item instead of
+      // rendering each wrapped line as its own bullet.
+      const append = (text, startsItem) => {
+        if (startsItem || !open) current.lines.push(text);
+        else current.lines[current.lines.length - 1] += ` ${text}`;
+
+        open = true;
+      };
 
       for (const raw of markdown.split(/\r?\n/)) {
         const line = raw.trim();
@@ -27,6 +40,7 @@
           current = { version: heading[1], date: heading[2] ? heading[2].trim() : null, lines: [] };
           entries.push(current);
           collecting = true;
+          open = false;
 
           continue;
         }
@@ -34,13 +48,23 @@
         // A detail heading ends the user-facing part until the next version.
         if (line.startsWith('###')) {
           collecting = false;
+          open = false;
 
           continue;
         }
 
-        if (!collecting || !current || line === '') continue;
+        if (!collecting || !current) continue;
 
-        current.lines.push(line.replace(/^[-*]\s+/, ''));
+        // A blank line closes whatever was being built.
+        if (line === '') {
+          open = false;
+
+          continue;
+        }
+
+        const bullet = /^[-*]\s+/.test(line);
+
+        append(line.replace(/^[-*]\s+/, ''), bullet);
       }
 
       return entries;
