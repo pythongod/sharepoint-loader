@@ -63,10 +63,15 @@ for (const file of files) {
 
 const javascript = files.filter((file) => file.endsWith('.js'));
 if (javascript.length === 0) fail('manifest.json does not reference a content script');
-try {
-  execFileSync(process.execPath, ['--check', ...javascript], { cwd: root, stdio: 'inherit' });
-} catch {
-  fail('node --check failed');
+// One invocation per file: `node --check` only ever inspects its first file
+// argument and silently ignores the rest, so passing them all at once checked
+// exactly one script while appearing to check every one.
+for (const file of javascript) {
+  try {
+    execFileSync(process.execPath, ['--check', file], { cwd: root, stdio: 'inherit' });
+  } catch {
+    fail(`node --check failed: ${file}`);
+  }
 }
 console.log(
   `Validation passed: Manifest V3, version ${manifest.version}, ${files.length} packaged file(s), ${javascript.length} script(s).`
