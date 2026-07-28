@@ -1,6 +1,6 @@
 {
   "name": "sharepoint-loader",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "private": true,
   "description": "A standalone Manifest V3 extension for loading full SharePoint lists.",
   "scripts": {
