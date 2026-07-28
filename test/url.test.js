@@ -206,6 +206,52 @@ test('returns null for other _layouts pages', () => {
   );
 });
 
+// Opening a document from a library keeps the view's URL but repoints id at
+// the file and adds parent for the folder it came from. That is a document
+// being read, not a list being browsed: the panel does not belong there, and
+// treating the file path as a folder would make an export list a file.
+
+test('returns null while a document is open in the library viewer', () => {
+  assert.strictEqual(
+    url.parse(
+      'https://contoso.sharepoint.com/sites/team/Shared%20Documents/Forms/AllItems.aspx' +
+        '?id=%2Fsites%2Fteam%2FShared+Documents%2FDeck.pptx' +
+        '&parent=%2Fsites%2Fteam%2FShared+Documents'
+    ),
+    null
+  );
+});
+
+test('returns null for a document open from a OneDrive view', () => {
+  assert.strictEqual(
+    url.parse(
+      'https://contoso-my.sharepoint.com/personal/ada_contoso_com/_layouts/15/onedrive.aspx' +
+        '?id=%2Fpersonal%2Fada_contoso_com%2FDocuments%2FBericht.docx' +
+        '&parent=%2Fpersonal%2Fada_contoso_com%2FDocuments'
+    ),
+    null
+  );
+});
+
+test('still resolves a folder when parent is absent', () => {
+  const parsed = url.parse(
+    'https://contoso.sharepoint.com/sites/team/Shared%20Documents/Forms/AllItems.aspx' +
+      '?id=%2Fsites%2Fteam%2FShared+Documents%2FReports'
+  );
+
+  assert.strictEqual(parsed.folderUrl, '/sites/team/Shared Documents/Reports');
+});
+
+test('resolves a folder whose name contains a dot', () => {
+  // Extension sniffing would misread this as a file; only parent is decisive.
+  const parsed = url.parse(
+    'https://contoso.sharepoint.com/sites/team/Shared%20Documents/Forms/AllItems.aspx' +
+      '?id=%2Fsites%2Fteam%2FShared+Documents%2Fv1.2'
+  );
+
+  assert.strictEqual(parsed.folderUrl, '/sites/team/Shared Documents/v1.2');
+});
+
 test('ignores an id parameter belonging to a different list', () => {
   const parsed = url.parse(
     'https://contoso.sharepoint.com/sites/team/Shared%20Documents/Forms/AllItems.aspx' +
