@@ -9,12 +9,22 @@ details below it are for people working on the code.
 The settings page now shows what changed in recent versions, with the build you
 are running marked as installed.
 
+The toolbar tooltip now keeps its version after the extension is disabled and
+re-enabled, where it previously fell back to a versionless name.
+
 ### Details
 - `CHANGELOG.md` is the single source: the extension renders only the part
   above each version's `### Details` section, so the two audiences cannot drift
   apart.
-- Validation requires an entry for the manifest's version, so an undocumented
-  release fails CI.
+- Validation asks the parser whether an entry exists rather than matching its
+  own regex. A second, looser grammar accepted headings the extension could not
+  read, so a version could vanish from the page with CI still green.
+- `showVersion()` now runs on every service-worker start. Re-enabling the
+  extension rebuilds the action from the manifest without firing `onInstalled`
+  or `onStartup`.
+- The panel reads the manifest inside a `try`: `getManifest` throws in a
+  content script orphaned by an extension reload, and that runs while the panel
+  is being built.
 
 ## 0.3.4 — 2026-07-28
 

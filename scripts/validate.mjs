@@ -1,5 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import { readFileSync, statSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { resolve } from 'node:path';
 import { packageFiles } from './package-files.mjs';
 
@@ -61,9 +62,24 @@ try {
   fail('CHANGELOG.md does not exist');
 }
 
-if (!new RegExp(`^##\\s+${manifest.version.replace(/\./g, '\\.')}\\b`, 'm').test(changelog)) {
-  fail(`CHANGELOG.md has no "## ${manifest.version}" entry — document the release before shipping it`);
+// Ask the parser rather than matching a second regex here. A guard with its
+// own, looser grammar passes headings the extension cannot read — `## 0.4.0
+// (2026-07-28)` satisfied a regex while rendering nothing — which is the exact
+// silent-drop this rule exists to prevent.
+createRequire(import.meta.url)('../src/changelog.js');
+
+const documented = globalThis.SPL.changelog.highlights(changelog);
+
+if (!documented.some((entry) => entry.version === manifest.version)) {
+  fail(
+    `CHANGELOG.md has no "## ${manifest.version}" entry the extension can read — ` +
+      'document the release before shipping it'
+  );
 }
+
+// Without an action block the toolbar tooltip and the click that opens the
+// settings both disappear silently.
+if (!manifest.action) fail('manifest.json must declare an action');
 
 const files = packageFiles(root, manifest);
 if (!files.includes('src/content.js')) fail('the content script entry point is missing');

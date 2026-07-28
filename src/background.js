@@ -11,10 +11,16 @@ chrome.runtime.onMessage.addListener((message) => {
 // rather than written into default_title, which would need updating by hand on
 // every release and would eventually disagree with the actual version.
 function showVersion() {
-  chrome.action.setTitle({
-    title: `SharePoint Loader ${chrome.runtime.getManifest().version}`,
-  });
+  const { name, version } = chrome.runtime.getManifest();
+
+  chrome.action.setTitle({ title: `${name} ${version}` });
 }
+
+// Run on every service-worker start, not only on install and browser startup.
+// Disabling and re-enabling the extension rebuilds the action from the
+// manifest without firing either event, which left the tooltip showing the
+// versionless default_title until the next full browser restart.
+showVersion();
 
 chrome.runtime.onInstalled.addListener(showVersion);
 chrome.runtime.onStartup.addListener(showVersion);
