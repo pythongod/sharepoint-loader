@@ -46,7 +46,10 @@ function htmlReferences(root, htmlPath) {
 }
 
 export function packageFiles(root, manifest) {
-  const files = new Set(['manifest.json']);
+  // manifest.json and CHANGELOG.md are structural: the manifest is the entry
+  // point everything else is derived from, and the changelog is fetched at
+  // runtime by the options page, so nothing in the manifest ever names it.
+  const files = new Set(['manifest.json', 'CHANGELOG.md']);
 
   for (const reference of manifestReferences(manifest)) {
     files.add(reference);

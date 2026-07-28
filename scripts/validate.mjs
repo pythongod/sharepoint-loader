@@ -50,6 +50,21 @@ if (manifest.optional_permissions) fail('optional_permissions must not be declar
 if (!manifest.options_page) fail('manifest.json must declare an options page');
 if (!manifest.icons || !manifest.icons['128']) fail('manifest.json must declare a 128px icon');
 
+// A changelog kept by good intentions stops at the third release. Requiring an
+// entry for the version being shipped makes CI refuse an undocumented release.
+const changelogPath = resolve(root, 'CHANGELOG.md');
+let changelog = '';
+
+try {
+  changelog = readFileSync(changelogPath, 'utf8');
+} catch {
+  fail('CHANGELOG.md does not exist');
+}
+
+if (!new RegExp(`^##\\s+${manifest.version.replace(/\./g, '\\.')}\\b`, 'm').test(changelog)) {
+  fail(`CHANGELOG.md has no "## ${manifest.version}" entry — document the release before shipping it`);
+}
+
 const files = packageFiles(root, manifest);
 if (!files.includes('src/content.js')) fail('the content script entry point is missing');
 
