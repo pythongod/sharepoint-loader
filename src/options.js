@@ -68,5 +68,11 @@
     announce('Defaults restored');
   });
 
+  // Read from the manifest so the displayed version cannot drift from the
+  // installed one.
+  if (globalThis.chrome && chrome.runtime && chrome.runtime.getManifest) {
+    document.getElementById('version').textContent = chrome.runtime.getManifest().version;
+  }
+
   SPL.settings.load().then(show);
 })(globalThis.SPL);
