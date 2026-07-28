@@ -29,6 +29,15 @@
 
       if (!isViewPage(fileName)) return null;
 
+      // Opening a document keeps the view's URL but repoints id at the file and
+      // adds parent for the folder it came from. The user is reading a document,
+      // not browsing a list — the panel does not belong there, and treating the
+      // file path as a folder would make an export try to list a file.
+      //
+      // parent is the decisive signal rather than the id's file extension: a
+      // folder may legitimately be named "v1.2".
+      if (parsed.searchParams.get('parent')) return null;
+
       let listUrl = null;
       let webUrl = null;
 
