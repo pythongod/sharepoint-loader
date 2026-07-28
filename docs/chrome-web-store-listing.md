@@ -21,9 +21,13 @@ Loader** Chrome Web Store item.
 > On a SharePoint list or document library, a small panel appears in the lower
 > right with two things it can do:
 >
-> **Load full list** — progressively scrolls the list so SharePoint renders the
+> **Load full list** — progressively scrolls the list so SharePoint fetches the
 > folders, files, and rows it had not loaded yet. Use this when you want to
-> select everything in the page, for example before "Download as zip".
+> select everything in the page, for example before "Download as zip". The
+> count shown while it runs is how many rows SharePoint is currently drawing,
+> which is fewer than it has fetched — the list only ever keeps part of itself
+> on screen. When it finishes, the list's own header checkbox selects
+> everything.
 >
 > **Export CSV / Export JSON** — reads the list through SharePoint's own API
 > and saves it as a file. The export contains the columns of the view you are
@@ -86,9 +90,11 @@ Upload order:
 > in the lower-right corner; select it to open the panel. The panel appears
 > only on list and library pages, not on other SharePoint pages.
 >
-> **Load full list** progressively scrolls the list in the page and reports the
-> number of rows loaded. It stops when the list settles, when the configured
-> time limit is reached, or when you select Stop.
+> **Load full list** progressively scrolls the list in the page and reports how
+> many rows SharePoint currently has rendered — deliberately not a total, since
+> the list keeps only a window of rows on screen no matter how many it has
+> fetched. It stops when the list settles, when the configured time limit is
+> reached, or when you select Stop.
 >
 > **Export CSV** and **Export JSON** read the list using SharePoint's own REST
 > API (`RenderListDataAsStream`) on the same site, with the signed-in user's

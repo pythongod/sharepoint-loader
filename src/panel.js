@@ -308,7 +308,7 @@
         settleMs: settings.scrollSettleMs,
         maxRunMs: settings.scrollMaxRunMs,
         shouldStop,
-        onProgress: (count) => setStatus(SPL.progress.label({ found: count })),
+        onProgress: (count) => setStatus(SPL.progress.label({ rendered: count })),
       });
 
       setRunning(false);
@@ -364,12 +364,19 @@
   }
 
   function scrollMessage(result) {
+    // The row count is what SharePoint has rendered, not what it has fetched:
+    // its virtualised list keeps only a window in the page. Reporting the
+    // window as a result made a run that fetched 305 items read as 72. On
+    // success, point at the header checkbox instead — that is what acts on
+    // everything the scroll pulled in.
     if (result.reason === 'no-list') return 'No scrollable list found on this page.';
-    if (result.reason === 'stopped') return `Stopped · ${result.itemCount} rows loaded`;
+    if (result.reason === 'stopped') {
+      return SPL.progress.label({ rendered: result.itemCount, stopped: true });
+    }
     if (result.reason === 'timeout') {
-      return `Stopped at time limit · ${result.itemCount} rows loaded`;
+      return `Stopped at time limit · ${SPL.progress.label({ rendered: result.itemCount })}`;
     }
 
-    return `Loaded · ${result.itemCount} rows in the page`;
+    return 'Fully scrolled — the whole list is loaded. Use the list’s header checkbox to select it all.';
   }
 })((globalThis.SPL = globalThis.SPL || {}));

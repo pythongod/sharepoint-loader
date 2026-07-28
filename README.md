@@ -13,9 +13,18 @@ pages that can:
   **Include subfolders** to walk the whole folder tree and add a folder path
   column.
 
-Progress is reported against the list's real item count where one exists, and
-as a running total where it does not. Any run can be stopped, and a run that
-fails partway offers to save what it already read.
+Export progress is reported against the list's real item count where one
+exists, and as a running total where it does not. Any run can be stopped, and a
+run that fails partway offers to save what it already read.
+
+**Load full list counts differently, and deliberately says so.** SharePoint's
+list is virtualised: it keeps only a window of rows in the page and discards
+the rest as you scroll past them. The number shown during a scroll is therefore
+what is *rendered*, not what has been fetched — a run that pulled in 305 items
+can legitimately show 72. That is why the run finishes by pointing at the
+header checkbox rather than quoting a total: select-all acts on everything
+SharePoint fetched, which is the whole point of scrolling first. Use **Export
+CSV** when you want an exact count.
 
 The panel appears only on pages where a list is actually present.
 

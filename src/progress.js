@@ -6,7 +6,17 @@
 (function (SPL) {
   SPL.progress = {
     label(state) {
-      const { found, total, folder, done, stopped, retryInSeconds } = state || {};
+      const { found, total, folder, done, stopped, retryInSeconds, rendered } = state || {};
+
+      // Scrolling counts rows present in the page. SharePoint's virtualised
+      // list keeps only a window of those, so this is always far below the
+      // number of items it has actually fetched — a run that fetched 305
+      // reported 72. Never call it "found", and never pair it with a total.
+      if (rendered !== undefined && rendered !== null) {
+        const rows = `${number(rendered)} ${rendered === 1 ? 'row' : 'rows'} rendered`;
+
+        return stopped ? `Stopped · ${rows}` : rows;
+      }
 
       if (found === undefined || found === null) return 'Idle';
 
