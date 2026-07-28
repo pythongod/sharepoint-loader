@@ -4,6 +4,18 @@ All notable changes to SharePoint Loader. The text above each version's
 **Details** section is what the extension shows on its options page; the
 details below it are for people working on the code.
 
+## 0.4.0 — 2026-07-28
+
+The settings page now shows what changed in recent versions, with the build you
+are running marked as installed.
+
+### Details
+- `CHANGELOG.md` is the single source: the extension renders only the part
+  above each version's `### Details` section, so the two audiences cannot drift
+  apart.
+- Validation requires an entry for the manifest's version, so an undocumented
+  release fails CI.
+
 ## 0.3.4 — 2026-07-28
 
 The version number now appears in the toolbar tooltip, in the panel, and on the
