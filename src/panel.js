@@ -174,6 +174,20 @@
 
     root.append(pill, panel);
 
+    // Reading the version from the manifest keeps it correct without anyone
+    // remembering to update a string here on release.
+    const version =
+      globalThis.chrome && chrome.runtime && chrome.runtime.getManifest
+        ? chrome.runtime.getManifest().version
+        : null;
+
+    if (version) {
+      const tag = panel.querySelector('h1');
+
+      tag.textContent = `SharePoint Loader ${version}`;
+      tag.title = `Version ${version}`;
+    }
+
     const find = (selector) => panel.querySelector(selector);
 
     return {
