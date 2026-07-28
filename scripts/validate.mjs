@@ -1,5 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import { readFileSync, statSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { resolve } from 'node:path';
 import { packageFiles } from './package-files.mjs';
 
@@ -49,6 +50,36 @@ if (manifest.optional_permissions) fail('optional_permissions must not be declar
 
 if (!manifest.options_page) fail('manifest.json must declare an options page');
 if (!manifest.icons || !manifest.icons['128']) fail('manifest.json must declare a 128px icon');
+
+// A changelog kept by good intentions stops at the third release. Requiring an
+// entry for the version being shipped makes CI refuse an undocumented release.
+const changelogPath = resolve(root, 'CHANGELOG.md');
+let changelog = '';
+
+try {
+  changelog = readFileSync(changelogPath, 'utf8');
+} catch {
+  fail('CHANGELOG.md does not exist');
+}
+
+// Ask the parser rather than matching a second regex here. A guard with its
+// own, looser grammar passes headings the extension cannot read — `## 0.4.0
+// (2026-07-28)` satisfied a regex while rendering nothing — which is the exact
+// silent-drop this rule exists to prevent.
+createRequire(import.meta.url)('../src/changelog.js');
+
+const documented = globalThis.SPL.changelog.highlights(changelog);
+
+if (!documented.some((entry) => entry.version === manifest.version)) {
+  fail(
+    `CHANGELOG.md has no "## ${manifest.version}" entry the extension can read — ` +
+      'document the release before shipping it'
+  );
+}
+
+// Without an action block the toolbar tooltip and the click that opens the
+// settings both disappear silently.
+if (!manifest.action) fail('manifest.json must declare an action');
 
 const files = packageFiles(root, manifest);
 if (!files.includes('src/content.js')) fail('the content script entry point is missing');

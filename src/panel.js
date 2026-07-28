@@ -176,16 +176,24 @@
 
     // Reading the version from the manifest keeps it correct without anyone
     // remembering to update a string here on release.
-    const version =
-      globalThis.chrome && chrome.runtime && chrome.runtime.getManifest
-        ? chrome.runtime.getManifest().version
-        : null;
+    // getManifest throws "Extension context invalidated" in a content script
+    // orphaned by an extension reload, and this runs while the panel is being
+    // built — a throw here would cost the whole panel, not just its version.
+    let manifest = null;
 
-    if (version) {
+    try {
+      if (globalThis.chrome && chrome.runtime && chrome.runtime.getManifest) {
+        manifest = chrome.runtime.getManifest();
+      }
+    } catch {
+      manifest = null;
+    }
+
+    if (manifest) {
       const tag = panel.querySelector('h1');
 
-      tag.textContent = `SharePoint Loader ${version}`;
-      tag.title = `Version ${version}`;
+      tag.textContent = `${manifest.name} ${manifest.version}`;
+      tag.title = `Version ${manifest.version}`;
     }
 
     const find = (selector) => panel.querySelector(selector);

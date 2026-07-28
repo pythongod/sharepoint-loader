@@ -97,6 +97,21 @@
       }
       :focus-visible { outline: 2px solid var(--accent-text); outline-offset: 2px; }
       #saved { color: var(--ok); }
+      .changelog h3 { margin: 16px 0 4px; font-size: 14px; font-weight: 600; }
+      .changelog h3:first-child { margin-top: 0; }
+      .changelog .date { color: var(--muted); font-weight: 400; font-size: 13px; }
+      .changelog .installed {
+        margin-left: 6px;
+        padding: 1px 6px;
+        border-radius: 10px;
+        background: var(--accent);
+        color: var(--accent-ink);
+        font-size: 11px;
+        font-weight: 600;
+      }
+      .changelog ul { margin: 0; padding-left: 18px; }
+      .changelog li { margin: 2px 0; }
+      .changelog.empty { color: var(--muted); }
     </style>
   </head>
   <body>
@@ -183,6 +198,11 @@
       </div>
     </fieldset>
 
+    <fieldset>
+      <legend>What's new</legend>
+      <div id="changelog" class="changelog">Loading…</div>
+    </fieldset>
+
     <footer>
       <button id="save" type="button">Save</button>
       <button id="reset" class="secondary" type="button">Restore defaults</button>
@@ -190,6 +210,7 @@
     </footer>
 
     <script src="settings.js"></script>
+    <script src="changelog.js"></script>
     <script src="options.js"></script>
   </body>
 </html>

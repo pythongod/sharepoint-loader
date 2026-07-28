@@ -84,6 +84,31 @@ manifest — including scripts referenced only by the options page — rather th
 maintained by hand, so adding a module needs no build change. Generated ZIP
 files are ignored by Git.
 
+## Changelog
+
+[`CHANGELOG.md`](CHANGELOG.md) serves two audiences from one file. Each version
+opens with a plain-language summary and may follow it with a `### Details`
+section:
+
+```markdown
+## 1.2.0 — 2026-08-01
+
+What a user notices.
+
+### Details
+- What a contributor needs to know.
+```
+
+Everything between the version heading and the first `###` is what the
+extension shows under **What's new** on its options page. Nothing below it is
+rendered there, so implementation notes can be as specific as they need to be.
+
+Prose may be hard-wrapped; wrapped lines are joined back into one item. A blank
+line starts a new one.
+
+`npm run check` fails when the version in `manifest.json` has no matching
+`## <version>` heading, so a release cannot ship undocumented.
+
 ## Architecture
 
 Each module is a dependency-free file that wraps itself in a shared `SPL`
