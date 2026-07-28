@@ -5,7 +5,7 @@
 // user-facing, so nothing has to be marked up per line and the two audiences
 // cannot drift apart.
 (function (SPL) {
-  const VERSION_HEADING = /^##\s+([^\s—-]+)\s*(?:[—-]\s*(.+))?$/;
+  const VERSION_HEADING = /^##\s+(\S+)(?:\s+[—–-]\s+(.+?))?\s*$/;
 
   SPL.changelog = {
     // [{ version, date, lines }] in file order. Input that does not match the

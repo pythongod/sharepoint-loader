@@ -77,3 +77,24 @@ test('tolerates windows line endings', () => {
   assert.strictEqual(entry.date, '2026-07-28');
   assert.deepStrictEqual(entry.lines, ['Shows the version.']);
 });
+
+test('accepts an en dash as a separator', () => {
+  const [entry] = changelog.highlights('## 0.3.4 – 2026-07-28\n\nWorks with en dash.\n');
+
+  assert.strictEqual(entry.version, '0.3.4');
+  assert.strictEqual(entry.date, '2026-07-28');
+});
+
+test('accepts an ascii hyphen as a separator', () => {
+  const [entry] = changelog.highlights('## 0.3.4 - 2026-07-28\n\nWorks with hyphen.\n');
+
+  assert.strictEqual(entry.version, '0.3.4');
+  assert.strictEqual(entry.date, '2026-07-28');
+});
+
+test('parses a prerelease version correctly', () => {
+  const [entry] = changelog.highlights('## 0.3.4-beta — 2026-07-28\n\nPrerelease entry.\n');
+
+  assert.strictEqual(entry.version, '0.3.4-beta');
+  assert.strictEqual(entry.date, '2026-07-28');
+});
