@@ -1,0 +1,5 @@
+{
+  "name": "sharepoint-loader",
+  "user": "ubuntu",
+  "install": "node --version && command -v zip && command -v unzip"
+}
