@@ -11,7 +11,7 @@ Loader** Chrome Web Store item.
 
 **Summary** (132-character limit)
 
-> Load a long SharePoint list completely, or export the whole list to CSV or JSON.
+> Load a long SharePoint list completely so select-all and Download as zip cover every item.
 
 **Detailed description**
 
@@ -19,7 +19,7 @@ Loader** Chrome Web Store item.
 > you the rest of it.
 >
 > On a SharePoint list or document library, a small panel appears in the lower
-> right with two things it can do:
+> right.
 >
 > **Load full list** — progressively scrolls the list so SharePoint fetches the
 > folders, files, and rows it had not loaded yet. Use this when you want to
@@ -29,17 +29,10 @@ Loader** Chrome Web Store item.
 > on screen. When it finishes, the list's own header checkbox selects
 > everything.
 >
-> **Export CSV / Export JSON** — reads the list through SharePoint's own API
-> and saves it as a file. The export contains the columns of the view you are
-> looking at, with the same values SharePoint displays. Tick **Include
-> subfolders** to cover an entire folder tree and add a folder path column.
+> While a run is going, the panel shows how many rows are on screen and can be
+> stopped at any time.
 >
-> While a run is going, the panel shows progress and can be stopped at any
-> time. If something fails partway through a long run, the extension offers to
-> save what it already read.
->
-> Settings — items per request, folder limits, CSV delimiter and byte order
-> mark, UTC or local dates, and the scrolling timings — are on the extension's
+> Settings — the scrolling timings and the panel theme — are on the extension's
 > options page.
 >
 > SharePoint Loader is intentionally focused:
@@ -72,14 +65,13 @@ upload the files to the Developer Dashboard. It is not generated locally: the
 generator loads Cairo by its Linux shared-object name and will not run on
 macOS or Windows.
 
-The screenshots depict the current panel, including the export actions and the
-"Include subfolders" option. The store icon is drawn from the same shapes as
-the extension's toolbar icon, so the two match.
+The screenshots depict the current panel. The store icon is drawn from the
+same shapes as the extension's toolbar icon, so the two match.
 
 Upload order:
 
-1. `screenshot-panel.png` — "Load the whole list, or export it"
-2. `screenshot-export-progress.png` — "Real progress, and stop whenever"
+1. `screenshot-panel.png` — "Load the whole list"
+2. `screenshot-export-progress.png` — "Stop whenever"
 3. `icon-128.png` — store icon
 4. `small-promo-tile.png` — optional small promotional tile
 
@@ -95,13 +87,6 @@ Upload order:
 > the list keeps only a window of rows on screen no matter how many it has
 > fetched. It stops when the list settles, when the configured time limit is
 > reached, or when you select Stop.
->
-> **Export CSV** and **Export JSON** read the list using SharePoint's own REST
-> API (`RenderListDataAsStream`) on the same site, with the signed-in user's
-> session, and save the result as a file. These requests are read-only. Tick
-> **Include subfolders** first to walk the whole folder tree. Progress shows
-> the item count, against the list's total item count when the export covers
-> the whole list.
 >
 > The gear icon opens the options page, which stores preferences using the
 > `storage` permission. No other permissions are requested and no data is sent

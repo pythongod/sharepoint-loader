@@ -5,6 +5,11 @@
 (function (SPL) {
   const HOST_ID = 'sharepoint-loader-panel';
 
+  // Export CSV / JSON is built and tested, but hidden until Load full list is
+  // the action we are willing to ship as the main one. Flip this to show the
+  // export buttons, Include subfolders, and Save partial again.
+  const SHOW_EXPORT = false;
+
   // Colours live in custom properties so the dark palette is one override
   // rather than a second copy of the stylesheet. `all: initial` does not reset
   // custom properties, so the two rules below coexist.
@@ -159,11 +164,11 @@
         <div class="actions">
           <button class="load">Load full list</button>
         </div>
-        <div class="actions">
+        <div class="actions export-row"${SHOW_EXPORT ? '' : ' hidden'}>
           <button class="csv secondary">Export CSV</button>
           <button class="json secondary">Export JSON</button>
         </div>
-        <label><input type="checkbox" class="recursive"> Include subfolders</label>
+        <label class="recursive-row"${SHOW_EXPORT ? '' : ' hidden'}><input type="checkbox" class="recursive"> Include subfolders</label>
         <div class="actions stop-row" hidden><button class="stop">Stop</button></div>
         <div class="actions partial-row" hidden>
           <button class="partial secondary">Save partial</button>
@@ -234,7 +239,9 @@
       running = state;
       view.stopRow.hidden = !state;
 
-      for (const button of [view.load, view.csv, view.json]) button.disabled = state;
+      const actions = SHOW_EXPORT ? [view.load, view.csv, view.json] : [view.load];
+
+      for (const button of actions) button.disabled = state;
 
       if (state) view.partialRow.hidden = true;
     };
@@ -254,7 +261,7 @@
 
     SPL.settings.load().then((loaded) => {
       settings = loaded;
-      view.recursive.checked = loaded.includeSubfoldersByDefault;
+      if (SHOW_EXPORT) view.recursive.checked = loaded.includeSubfoldersByDefault;
       applyTheme(loaded.theme);
     });
 
@@ -285,18 +292,20 @@
       setStatus('Stopping…');
     });
 
-    view.partial.addEventListener('click', () => {
-      SPL.download.save(
-        SPL.download.fileName(context.listUrl, partial.format),
-        partial.chunks,
-        partial.format
-      );
-      view.partialRow.hidden = true;
-    });
-
     view.load.addEventListener('click', () => runScroll());
-    view.csv.addEventListener('click', () => runExport('csv'));
-    view.json.addEventListener('click', () => runExport('json'));
+
+    if (SHOW_EXPORT) {
+      view.partial.addEventListener('click', () => {
+        SPL.download.save(
+          SPL.download.fileName(context.listUrl, partial.format),
+          partial.chunks,
+          partial.format
+        );
+        view.partialRow.hidden = true;
+      });
+      view.csv.addEventListener('click', () => runExport('csv'));
+      view.json.addEventListener('click', () => runExport('json'));
+    }
 
     async function describe() {
       const leaf = context.listUrl.split('/').filter(Boolean).pop();
@@ -308,7 +317,7 @@
 
         view.subtitle.textContent = `${leaf} · ${info.itemCount.toLocaleString()} items`;
       } catch {
-        // A missing count costs nothing here; the export still runs.
+        // A missing count costs nothing here; Load full list still runs.
       }
     }
 

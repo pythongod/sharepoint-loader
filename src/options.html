@@ -96,6 +96,8 @@
         border-color: var(--accent-text);
       }
       :focus-visible { outline: 2px solid var(--accent-text); outline-offset: 2px; }
+      /* Author rules can outrank the user-agent [hidden] display:none. */
+      [hidden] { display: none !important; }
       #saved { color: var(--ok); }
       .changelog h3 { margin: 16px 0 4px; font-size: 14px; font-weight: 600; }
       .changelog h3:first-child { margin-top: 0; }
@@ -117,7 +119,7 @@
   <body>
     <h1>SharePoint Loader <span id="version"></span></h1>
     <p class="intro">
-      These settings apply to reading and exporting lists. Nothing here is sent
+      These settings apply to loading lists in the page. Nothing here is sent
       anywhere; values are stored in your browser profile.
     </p>
 
@@ -136,7 +138,8 @@
       </div>
     </fieldset>
 
-    <fieldset>
+    <!-- Export-only: hidden while the panel's export actions are hidden. -->
+    <fieldset hidden>
       <legend>Reading</legend>
       <div class="field">
         <label for="pageSize">Items per request</label>
@@ -149,7 +152,7 @@
       </div>
     </fieldset>
 
-    <fieldset>
+    <fieldset hidden>
       <legend>Subfolders</legend>
       <div class="field inline">
         <input id="includeSubfoldersByDefault" type="checkbox" />
@@ -165,7 +168,7 @@
       </div>
     </fieldset>
 
-    <fieldset>
+    <fieldset hidden>
       <legend>CSV</legend>
       <div class="field">
         <label for="csvDelimiter">Delimiter</label>
