@@ -8,14 +8,10 @@ pages that can:
   folders, files, and rows it had not loaded yet. This is what makes the page
   itself hold everything, so SharePoint's own select-all and "Download as zip"
   cover the whole library.
-- **Export CSV / JSON** — read the list through SharePoint's own REST API and
-  save it as a file, using the columns of the view you are looking at. Tick
-  **Include subfolders** to walk the whole folder tree and add a folder path
-  column.
 
-Export progress is reported against the list's real item count where one
-exists, and as a running total where it does not. Any run can be stopped, and a
-run that fails partway offers to save what it already read.
+CSV and JSON export is built, but the panel buttons are hidden until Load full
+list is the action that works reliably. Flip `SHOW_EXPORT` in `src/panel.js` to
+bring them back.
 
 **Load full list counts differently, and deliberately says so.** SharePoint's
 list is virtualised: it keeps only a window of rows in the page and discards
@@ -23,25 +19,28 @@ the rest as you scroll past them. The number shown during a scroll is therefore
 what is *rendered*, not what has been fetched — a run that pulled in 305 items
 can legitimately show 72. That is why the run finishes by pointing at the
 header checkbox rather than quoting a total: select-all acts on everything
-SharePoint fetched, which is the whole point of scrolling first. Use **Export
-CSV** when you want an exact count.
+SharePoint fetched, which is the whole point of scrolling first.
 
 The panel appears only on pages where a list is actually present.
 
 ## How it reads a list
 
-The content script calls SharePoint's documented
+**Load full list** works by scrolling the page. The content script does not
+send list items anywhere; SharePoint itself fetches them as the viewport
+moves. The panel also asks SharePoint for the list's item count, so the
+subtitle can show how large the list is.
+
+CSV and JSON export — currently hidden — would call SharePoint's documented
 [`RenderListDataAsStream`](https://learn.microsoft.com/sharepoint/dev/sp-add-ins/working-with-lists-and-list-items-with-rest)
 endpoint on the same origin as the page, using the browser's existing
-SharePoint session. Requests are read-only, strictly sequential, and back off
-when SharePoint throttles. Nothing is sent anywhere else — see
+SharePoint session. Those requests are read-only, strictly sequential, and
+back off when SharePoint throttles. Nothing is sent anywhere else — see
 [`docs/chrome-web-store-privacy.md`](docs/chrome-web-store-privacy.md).
 
 ## Settings
 
 The options page (the gear icon in the panel, or the extension's entry in
-`chrome://extensions`) controls items per request, folder crawl limits, CSV
-delimiter and byte order mark, UTC or local dates, and the scrolling timings.
+`chrome://extensions`) controls the scrolling timings and the panel theme.
 
 ## Supported hosts
 
@@ -139,19 +138,27 @@ releasing, confirm against a real tenant:
 
 1. The panel appears on a document library and on a `/Lists/` list, and does
    not appear on a site home page.
-2. **Load full list** reaches the bottom of a long library and reports the row
-   count; stopping it mid-run reports "Stopped".
-3. **Export CSV** on a library produces the view's columns, opens correctly in
+2. **Load full list** reaches the bottom of a long library; stopping it
+   mid-run reports "Stopped". The count during the run is rows currently
+   rendered, not a total.
+3. After a completed run, the list's header checkbox selects everything
+   SharePoint fetched, including items no longer drawn in the virtualised
+   window.
+4. Settings persist across a browser restart.
+
+Export CSV / JSON is hidden in this version (`SHOW_EXPORT` in `src/panel.js`).
+When it is shown again, also confirm:
+
+5. **Export CSV** on a library produces the view's columns, opens correctly in
    Excel, and matches the item count shown by SharePoint.
-4. **Include subfolders** produces a folder path column covering nested
+6. **Include subfolders** produces a folder path column covering nested
    folders.
-5. Paging works beyond one page — verify on a list of more than 500 items that
+7. Paging works beyond one page — verify on a list of more than 500 items that
    the export is complete. This is the behaviour flagged in the design document
    as needing confirmation against a live tenant: the response's `NextHref`
    continuation is observed behaviour rather than documented. If it proves
    unreliable, `SPL.rows.pagingFromLastRow` implements the documented
    `RowLimit` fallback and is already tested.
-6. Settings persist across a browser restart.
 
 ## Chrome Web Store assets
 

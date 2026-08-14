@@ -4,6 +4,19 @@ All notable changes to SharePoint Loader. The text above each version's
 **Details** section is what the extension shows on its options page; the
 details below it are for people working on the code.
 
+## 0.5.0 — 2026-08-14
+
+Export CSV and Export JSON are hidden for now. The panel's job is **Load full
+list**: scroll until SharePoint has fetched everything, then use the list's
+own header checkbox.
+
+### Details
+- Panel export actions, Include subfolders, and Save partial stay in the
+  markup behind a `SHOW_EXPORT` flag so they can come back without a rewrite.
+- Export-only settings (reading, subfolders, CSV) are hidden on the options
+  page for the same reason.
+- The export modules and their tests are unchanged.
+
 ## 0.4.0 — 2026-07-28
 
 The settings page now shows what changed in recent versions, with the build you

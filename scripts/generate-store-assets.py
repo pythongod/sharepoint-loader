@@ -192,7 +192,7 @@ def sharepoint_mock(ctx, running=False):
 def panel(ctx, running=False):
     """The extension's own panel, as src/panel.js renders it."""
     x, width = 960, 300
-    height = 248 if running else 224
+    height = 176 if running else 148
     y = 780 - height
     inner = x + 16
     content = width - 32
@@ -216,26 +216,12 @@ def panel(ctx, running=False):
     text(ctx, inner, y + 62, "Documents · 8,300 items", 12, "#616161")
 
     button(ctx, inner, y + 76, content, "Load full list", True, running)
-    half = (content - 6) / 2
-    button(ctx, inner, y + 116, half, "Export CSV", False, running)
-    button(ctx, inner + half + 6, y + 116, half, "Export JSON", False, running)
-
-    check_y = y + 160
-    rounded_rect(ctx, inner, check_y, 14, 14, 2, "#0f6cbd" if running else "#ffffff", "#8a8886")
-    if running:
-        color(ctx, "#ffffff")
-        CAIRO.cairo_set_line_width(ctx, 2)
-        CAIRO.cairo_move_to(ctx, inner + 3, check_y + 7)
-        CAIRO.cairo_line_to(ctx, inner + 6, check_y + 10)
-        CAIRO.cairo_line_to(ctx, inner + 11, check_y + 4)
-        CAIRO.cairo_stroke(ctx)
-    text(ctx, inner + 22, check_y + 12, "Include subfolders", 12, "#242424")
 
     if running:
-        button(ctx, inner, y + 186, content, "Stop", True)
-        text(ctx, inner, y + 236, "2,910 found · scanning Archive/2019", 12, "#616161")
+        button(ctx, inner, y + 116, content, "Stop", True)
+        text(ctx, inner, y + 164, "72 rows rendered", 12, "#616161")
     else:
-        text(ctx, inner, y + 204, "Idle", 12, "#616161")
+        text(ctx, inner, y + 128, "Idle", 12, "#616161")
 
 
 def screenshot(ctx, _, __, running=False):
@@ -243,11 +229,11 @@ def screenshot(ctx, _, __, running=False):
     rect(ctx, 0, 0, 1280, 108, "#092e54")
     logo(ctx, 30, 24, 60)
     text(ctx, 116, 54,
-         "Real progress, and stop whenever" if running else "Load the whole list, or export it",
+         "Stop whenever" if running else "Load the whole list",
          29, "#ffffff", True)
     text(ctx, 117, 82,
-         "Walk every subfolder and save the lot" if running
-         else "Every item in the page, or as a CSV or JSON file",
+         "The count is rows on screen, not the whole list" if running
+         else "Scroll until SharePoint has fetched every item",
          16, "#cfe7fb")
 
 
@@ -263,7 +249,7 @@ def promo(ctx, _, __):
     logo(ctx, 30, 36, 72)
     text(ctx, 30, 150, "SharePoint", 35, "#ffffff", True)
     text(ctx, 30, 192, "Loader", 35, "#ffffff", True)
-    text(ctx, 31, 232, "The whole list. In the page, or as a file.", 15, "#cfe7fb")
+    text(ctx, 31, 232, "The whole list, loaded in the page.", 15, "#cfe7fb")
 
 
 canvas(128, 128, "icon-128.png", icon)
