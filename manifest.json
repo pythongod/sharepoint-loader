@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "SharePoint Loader",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Load every item of a SharePoint list in the page.",
   "permissions": [
     "storage"
@@ -41,6 +41,7 @@
         "src/api.js",
         "src/crawl.js",
         "src/export.js",
+        "src/search.js",
         "src/scroll.js",
         "src/panel.js",
         "src/content.js"

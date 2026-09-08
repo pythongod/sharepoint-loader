@@ -260,3 +260,59 @@ test('ignores an id parameter belonging to a different list', () => {
 
   assert.strictEqual(parsed.folderUrl, '/sites/team/Shared Documents');
 });
+
+test('builds a folder link from the page URL, keeping the other parameters', () => {
+  assert.strictEqual(
+    url.folderHref(
+      'https://contoso.sharepoint.com/sites/team/Shared%20Documents/Forms/AllItems.aspx' +
+        '?viewid=1a2b3c4d-0000-0000-0000-000000000001',
+      '/sites/team/Shared Documents/Reports/2019'
+    ),
+    'https://contoso.sharepoint.com/sites/team/Shared%20Documents/Forms/AllItems.aspx' +
+      '?id=%2Fsites%2Fteam%2FShared%20Documents%2FReports%2F2019' +
+      '&viewid=1a2b3c4d-0000-0000-0000-000000000001'
+  );
+});
+
+test('a folder link replaces the id the page already carries', () => {
+  const href = url.folderHref(
+    'https://contoso.sharepoint.com/sites/team/Shared%20Documents/Forms/AllItems.aspx' +
+      '?id=%2Fsites%2Fteam%2FShared%20Documents%2FReports',
+    '/sites/team/Shared Documents/Invoices'
+  );
+
+  assert.deepStrictEqual(new URL(href).searchParams.getAll('id'), [
+    '/sites/team/Shared Documents/Invoices',
+  ]);
+});
+
+test('a folder link encodes a space as %20, which SharePoint reads as a space', () => {
+  const href = url.folderHref(
+    'https://contoso.sharepoint.com/sites/team/Customers/Forms/AllItems.aspx',
+    '/sites/team/Customers/W. Kohlhammer GmbH'
+  );
+
+  assert.strictEqual(href.includes('W.%20Kohlhammer%20GmbH'), true);
+  assert.strictEqual(url.parse(href).folderUrl, '/sites/team/Customers/W. Kohlhammer GmbH');
+});
+
+test('a folder link works for a OneDrive-rendered library', () => {
+  const href = url.folderHref(
+    'https://contoso.sharepoint.com/sites/team/_layouts/15/onedrive.aspx' +
+      '?id=%2Fsites%2Fteam%2FShared%20Documents',
+    '/sites/team/Shared Documents/Reports'
+  );
+
+  assert.strictEqual(url.parse(href).folderUrl, '/sites/team/Shared Documents/Reports');
+});
+
+test('returns null for a folder link off a URL that cannot be parsed', () => {
+  assert.strictEqual(url.folderHref('not a url', '/sites/team/Customers'), null);
+});
+
+test('builds a file link that encodes each path segment on its own', () => {
+  assert.strictEqual(
+    url.fileHref('https://contoso.sharepoint.com', '/sites/team/Customers/Q3 report.docx'),
+    'https://contoso.sharepoint.com/sites/team/Customers/Q3%20report.docx'
+  );
+});

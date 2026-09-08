@@ -8,6 +8,9 @@ pages that can:
   folders, files, and rows it had not loaded yet. This is what makes the page
   itself hold everything, so SharePoint's own select-all and "Download as zip"
   cover the whole library.
+- **Find by name** — type a few letters and get the matching folders and files
+  as links, from every item in the current folder rather than the handful the
+  page happens to be holding.
 
 CSV and JSON export is built, but the panel buttons are hidden until Load full
 list is the action that works reliably. Flip `SHOW_EXPORT` in `src/panel.js` to
@@ -21,6 +24,14 @@ can legitimately show 72. That is why the run finishes by pointing at the
 header checkbox rather than quoting a total: select-all acts on everything
 SharePoint fetched, which is the whole point of scrolling first.
 
+**Find by name exists because Ctrl+F cannot.** The same virtualisation is why
+the browser's find-in-page reports no match for a folder that is certainly
+there: it searches the document, and the document holds a screenful of rows no
+matter how long a scroll has been running. Find by name reads the folder
+through SharePoint's own API and searches that, so it is unaffected by what the
+page is currently drawing — and a hit is a link, so it navigates rather than
+just highlighting.
+
 The panel appears only on pages where a list is actually present.
 
 ## How it reads a list
@@ -29,6 +40,13 @@ The panel appears only on pages where a list is actually present.
 send list items anywhere; SharePoint itself fetches them as the viewport
 moves. The panel also asks SharePoint for the list's item count, so the
 subtitle can show how large the list is.
+
+**Find by name** works the other way around: it asks SharePoint for the items
+directly, through the same `RenderListDataAsStream` endpoint the list itself
+uses, and keeps one name and one link per item in memory. Only the first
+keystroke costs a request; the rest filter that index. It covers the folder and
+the view the panel is pointing at — the scope Ctrl+F would have had — and is
+capped at `SPL.search.MAX_ENTRIES` items, saying so when a folder is larger.
 
 CSV and JSON export — currently hidden — would call SharePoint's documented
 [`RenderListDataAsStream`](https://learn.microsoft.com/sharepoint/dev/sp-add-ins/working-with-lists-and-list-items-with-rest)
@@ -125,6 +143,7 @@ CommonJS module under `node --test`:
 | `src/progress.js` | Progress state → display text |
 | `src/settings.js` | Defaults and `chrome.storage.sync` |
 | `src/scroll.js` | The in-page scrolling loader |
+| `src/search.js` | Folder index and name matching for Find by name |
 | `src/panel.js`, `src/content.js` | Panel UI and entry point |
 
 Content scripts run in an isolated world and cannot read the page's
@@ -144,16 +163,21 @@ releasing, confirm against a real tenant:
 3. After a completed run, the list's header checkbox selects everything
    SharePoint fetched, including items no longer drawn in the virtualised
    window.
-4. Settings persist across a browser restart.
+4. **Find by name** locates a folder that Ctrl+F reports as 0/0, and clicking
+   the result opens that folder. Check a name with an umlaut and a name with a
+   space, on a library and on a `/Lists/` list.
+5. Moving into a subfolder and back re-reads the index for the folder now
+   shown, rather than answering from the previous one.
+6. Settings persist across a browser restart.
 
 Export CSV / JSON is hidden in this version (`SHOW_EXPORT` in `src/panel.js`).
 When it is shown again, also confirm:
 
-5. **Export CSV** on a library produces the view's columns, opens correctly in
+7. **Export CSV** on a library produces the view's columns, opens correctly in
    Excel, and matches the item count shown by SharePoint.
-6. **Include subfolders** produces a folder path column covering nested
+8. **Include subfolders** produces a folder path column covering nested
    folders.
-7. Paging works beyond one page — verify on a list of more than 500 items that
+9. Paging works beyond one page — verify on a list of more than 500 items that
    the export is complete. This is the behaviour flagged in the design document
    as needing confirmation against a live tenant: the response's `NextHref`
    continuation is observed behaviour rather than documented. If it proves

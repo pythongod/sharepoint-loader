@@ -1,8 +1,9 @@
 'use strict';
 
-// Derives list identity from the page URL alone. Content scripts run in an
-// isolated world and cannot read the page's _spPageContextInfo, so every value
-// here comes from the address bar. api.js confirms the result before use.
+// Derives list identity from the page URL alone, and builds the links that
+// point back into it. Content scripts run in an isolated world and cannot read
+// the page's _spPageContextInfo, so every value here comes from the address
+// bar. api.js confirms the result before use.
 (function (SPL) {
   const formPages = /^(disp|edit|new|upload)form\.aspx$/i;
 
@@ -72,6 +73,39 @@
         folderUrl: folderFrom(parsed.searchParams.get('id'), listUrl),
         viewId: viewIdFrom(parsed.searchParams.get('viewid')),
       };
+    },
+
+    // The link the list itself uses to open a folder: this view's URL with
+    // ?id= repointed. Taken from the page URL rather than assembled from
+    // listUrl, so it holds for both <library>/Forms/<view>.aspx and
+    // _layouts/15/onedrive.aspx, and keeps the view the user is in.
+    folderHref(pageHref, folderUrl) {
+      let parsed;
+
+      try {
+        parsed = new URL(pageHref);
+      } catch {
+        return null;
+      }
+
+      // searchParams decodes, so every pair is re-encoded on the way out.
+      // URLSearchParams.set is not used for this: it writes a space as +,
+      // which SharePoint reads as a literal plus in a folder path.
+      const query = [
+        ['id', folderUrl],
+        ...[...parsed.searchParams].filter(([name]) => name.toLowerCase() !== 'id'),
+      ]
+        .map(([name, value]) => `${encodeURIComponent(name)}=${encodeURIComponent(value)}`)
+        .join('&');
+
+      return `${parsed.origin}${parsed.pathname}?${query}`;
+    },
+
+    // A server-relative path as an absolute URL. Each segment is encoded on
+    // its own so the separators survive: encoding the whole path at once would
+    // turn every slash into %2F.
+    fileHref(origin, path) {
+      return `${origin}${String(path).split('/').map(encodeURIComponent).join('/')}`;
     },
   };
 

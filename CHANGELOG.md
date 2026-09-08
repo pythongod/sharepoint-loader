@@ -4,6 +4,44 @@ All notable changes to SharePoint Loader. The text above each version's
 **Details** section is what the extension shows on its options page; the
 details below it are for people working on the code.
 
+## 0.6.0 — 2026-09-08
+
+The panel can now **find an item by name** in the folder you are looking at.
+Type a few letters and the matches appear as links: click one to open the
+folder or the document.
+
+This is there because the browser's own Ctrl+F cannot do it. SharePoint keeps
+only a screenful of rows in the page and throws the rest away as you scroll,
+so find-in-page searches a few dozen rows however long **Load full list** has
+been running. The find field reads the folder through SharePoint's own API
+instead, so it searches every item in it.
+
+Matching ignores case and accents — `nurnberg` finds *NürnbergMesse* — and
+every word you type has to appear somewhere in the name, in any order, so
+`data ntt` finds *NTT_Global_Data_Centers*. Press Enter to open the top match,
+Escape to clear.
+
+### Details
+- `src/search.js` indexes the current folder through `RenderListDataAsStream`,
+  keeping only a name, a link, and a folder flag per item. Matching is pure and
+  runs against that index, so only the first keystroke costs a request.
+- The index covers the current folder and the current view, not subfolders:
+  that is the scope Ctrl+F would have had. It is dropped when the panel moves
+  to another folder or view, and a read for a folder that has been left is
+  abandoned rather than paged to the end.
+- `SPL.search.MAX_ENTRIES` caps the index at 20000 items. A larger folder is
+  searched as far as it was read and the panel says so, rather than holding a
+  343000-item library in memory.
+- `SPL.url` gained `folderHref` and `fileHref`. `folderHref` repoints the page
+  URL's `id` parameter, so a result links into the view the user is already in
+  and works for both `Forms/<view>.aspx` and `_layouts/15/onedrive.aspx`. It
+  encodes by hand: `URLSearchParams.set` writes a space as `+`, which
+  SharePoint reads as a literal plus in a folder path.
+- Search reports on its own line in the panel, so a search and a scroll in
+  flight at once do not overwrite each other's status. It also does not share
+  the Stop button's cancel flag, which stays set after a stop.
+- Export CSV / JSON stays hidden behind `SHOW_EXPORT`.
+
 ## 0.5.0 — 2026-08-14
 
 Export CSV and Export JSON are hidden for now. The panel's job is **Load full
