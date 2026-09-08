@@ -80,6 +80,7 @@ test('every content script loads in the order the manifest declares', () => {
       'progress',
       'rows',
       'scroll',
+      'search',
       'serialize',
       'settings',
       'url',
@@ -94,5 +95,8 @@ test('the manifest lists every content script that exists in src', () => {
   assert.ok(scripts.indexOf('src/rows.js') < scripts.indexOf('src/api.js'));
   assert.ok(scripts.indexOf('src/serialize.js') < scripts.indexOf('src/export.js'));
   assert.ok(scripts.indexOf('src/crawl.js') < scripts.indexOf('src/export.js'));
+  assert.ok(scripts.indexOf('src/crawl.js') < scripts.indexOf('src/search.js'));
+  assert.ok(scripts.indexOf('src/url.js') < scripts.indexOf('src/search.js'));
+  assert.ok(scripts.indexOf('src/search.js') < scripts.indexOf('src/panel.js'));
   assert.ok(scripts.at(-1) === 'src/content.js');
 });

@@ -10,6 +10,11 @@
   // export buttons, Include subfolders, and Save partial again.
   const SHOW_EXPORT = false;
 
+  // Every match is counted, but only this many are drawn. A query of one
+  // letter in a large folder matches thousands of names, and a shadow-root
+  // list of thousands of anchors janks the page it is sitting on.
+  const MAX_HITS = 50;
+
   // Colours live in custom properties so the dark palette is one override
   // rather than a second copy of the stylesheet. `all: initial` does not reset
   // custom properties, so the two rules below coexist.
@@ -62,7 +67,7 @@
     }
     .panel {
       position: fixed; right: 20px; bottom: 20px; z-index: 2147483647;
-      box-sizing: border-box; min-width: 260px;
+      box-sizing: border-box; min-width: 280px; max-width: 380px;
       font: 400 13px/1.45 -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       color: var(--fg); background: var(--bg);
       border: 1px solid var(--border); border-radius: 6px;
@@ -106,6 +111,29 @@
     button:focus-visible, label:focus-within {
       outline: 2px solid var(--accent-text); outline-offset: 2px;
     }
+    .query {
+      box-sizing: border-box; width: 100%; padding: 6px 8px;
+      border: 1px solid var(--border); border-radius: 4px;
+      background: var(--bg); color: var(--fg); font: 400 13px/1.3 inherit;
+    }
+    .query::placeholder { color: var(--muted); }
+    .query:focus-visible { outline: 2px solid var(--accent-text); outline-offset: 1px; }
+    .note { color: var(--muted); }
+    .note.error { color: var(--danger); }
+    .hits {
+      max-height: 220px; overflow-y: auto;
+      border: 1px solid var(--line); border-radius: 4px;
+    }
+    .hit {
+      display: flex; align-items: center; gap: 6px;
+      padding: 5px 8px; border-bottom: 1px solid var(--line);
+      color: var(--fg); text-decoration: none;
+    }
+    .hit:last-child { border-bottom: 0; }
+    a.hit:hover { background: var(--hover); text-decoration: underline; }
+    a.hit:focus-visible { outline: 2px solid var(--accent-text); outline-offset: -2px; }
+    .hit .glyph { flex: 0 0 auto; }
+    .hit .name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   `;
 
   SPL.panel = {
@@ -161,6 +189,11 @@
       </header>
       <div class="body">
         <div class="subtitle"></div>
+        <input class="query" type="search" autocomplete="off" spellcheck="false"
+               placeholder="Find by name in this folder"
+               aria-label="Find by name in this folder">
+        <div class="note" role="status" aria-live="polite" hidden></div>
+        <div class="hits" hidden></div>
         <div class="actions">
           <button class="load">Load full list</button>
         </div>
@@ -208,6 +241,9 @@
       panel,
       subtitle: find('.subtitle'),
       status: find('.status'),
+      query: find('.query'),
+      note: find('.note'),
+      hits: find('.hits'),
       load: find('.load'),
       csv: find('.csv'),
       json: find('.json'),
@@ -227,12 +263,30 @@
     let running = false;
     let cancelled = false;
     let partial = null;
+    // The search index: null until the folder has been read, then one entry
+    // per item. Discarded whenever the panel moves to another folder or view,
+    // because both change what the list would show.
+    let entries = null;
+    let indexing = null;
+    let indexError = null;
+    let indexTruncated = false;
+    // An index for the folder we have since left must not land in `entries`.
+    let indexToken = 0;
+    let isLibrary;
 
     const shouldStop = () => cancelled;
 
     const setStatus = (text, isError) => {
       view.status.textContent = text;
       view.status.classList.toggle('error', Boolean(isError));
+    };
+
+    // The search has its own line: a scroll and a search can be in flight at
+    // once, and neither should overwrite what the other is reporting.
+    const setNote = (text, isError) => {
+      view.note.textContent = text || '';
+      view.note.hidden = !text;
+      view.note.classList.toggle('error', Boolean(isError));
     };
 
     const setRunning = (state) => {
@@ -294,6 +348,27 @@
 
     view.load.addEventListener('click', () => runScroll());
 
+    view.query.addEventListener('input', () => runQuery());
+
+    view.query.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        view.query.value = '';
+        clearHits();
+
+        return;
+      }
+
+      // Enter opens the top hit, which is the habit Ctrl+F built.
+      if (event.key !== 'Enter') return;
+
+      const first = view.hits.querySelector('a.hit');
+
+      if (!first) return;
+
+      event.preventDefault();
+      first.click();
+    });
+
     if (SHOW_EXPORT) {
       view.partial.addEventListener('click', () => {
         SPL.download.save(
@@ -315,6 +390,9 @@
       try {
         const info = await client().listInfo();
 
+        // Kept so a search does not have to ask again: whether this is a
+        // library or a generic list decides the shape of a result's link.
+        isLibrary = info.isLibrary;
         view.subtitle.textContent = `${leaf} · ${info.itemCount.toLocaleString()} items`;
       } catch {
         // A missing count costs nothing here; Load full list still runs.
@@ -329,6 +407,135 @@
         listUrl: context.listUrl,
         sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
       });
+    }
+
+    function clearHits() {
+      view.hits.textContent = '';
+      view.hits.hidden = true;
+      setNote('');
+      // Clearing the field is the retry gesture for a read that failed for a
+      // reason that has since passed, such as a dropped connection.
+      indexError = null;
+    }
+
+    // Reads the folder once and keeps it. Concurrent keystrokes share the one
+    // in-flight read rather than starting a request each.
+    function readFolder() {
+      if (entries) return Promise.resolve(entries);
+      if (indexing) return indexing;
+
+      const token = indexToken;
+
+      setNote('Reading this folder…');
+
+      indexing = SPL.search
+        .index({
+          api: client(),
+          context,
+          pageHref: location.href,
+          settings,
+          isLibrary,
+          // Moving to another folder abandons the read for the old one
+          // instead of paging to the end of a list nobody is looking at.
+          shouldStop: () => token !== indexToken,
+          onProgress: ({ found }) =>
+            setNote(`Reading this folder · ${SPL.progress.label({ found })}`),
+        })
+        .then((result) => {
+          if (token !== indexToken) return null;
+
+          entries = result.entries;
+          indexTruncated = result.truncated;
+
+          return entries;
+        })
+        .catch((error) => {
+          if (token !== indexToken) return null;
+
+          // Held so that typing another letter does not retry a request that
+          // failed for a reason the next keystroke cannot change.
+          indexError = error.message;
+          setNote(indexError, true);
+
+          return null;
+        })
+        .finally(() => {
+          indexing = null;
+        });
+
+      return indexing;
+    }
+
+    async function runQuery() {
+      const query = view.query.value.trim();
+
+      if (!query) {
+        clearHits();
+
+        return;
+      }
+
+      if (indexError) {
+        setNote(indexError, true);
+
+        return;
+      }
+
+      const found = entries || (await readFolder());
+
+      // A later keystroke, or a move to another folder, has superseded this.
+      if (!found || view.query.value.trim() !== query) return;
+
+      showHits(SPL.search.matches(found, query, { limit: MAX_HITS }));
+    }
+
+    function showHits({ hits, total }) {
+      view.hits.textContent = '';
+
+      for (const hit of hits) view.hits.append(hitRow(hit));
+
+      view.hits.hidden = hits.length === 0;
+      setNote(hitNote(hits.length, total));
+    }
+
+    function hitRow(hit) {
+      // An item we cannot link to is still worth showing: knowing the name is
+      // there answers the question that was asked.
+      const row = document.createElement(hit.url ? 'a' : 'div');
+
+      row.className = 'hit';
+
+      if (hit.url) row.href = hit.url;
+
+      const glyph = document.createElement('span');
+
+      glyph.className = 'glyph';
+      glyph.textContent = hit.isFolder ? '📁' : '📄';
+      glyph.setAttribute('aria-hidden', 'true');
+
+      const name = document.createElement('span');
+
+      name.className = 'name';
+      // Long names are clipped to keep the panel narrow; the full name stays
+      // available on hover.
+      name.textContent = hit.name;
+      name.title = hit.name;
+
+      row.append(glyph, name);
+
+      return row;
+    }
+
+    function hitNote(shown, total) {
+      // The ceiling is worth naming only when it could be hiding the answer.
+      const read = indexTruncated
+        ? ` · first ${SPL.search.MAX_ENTRIES.toLocaleString()} items read`
+        : '';
+
+      if (total === 0) return indexTruncated ? `No match${read}` : 'No match in this folder';
+      if (shown < total) return `${shown} of ${total.toLocaleString()} matches shown${read}`;
+
+      return `${total} ${total === 1 ? 'match' : 'matches'}${read}`;
     }
 
     async function runScroll() {
@@ -384,7 +591,30 @@
 
     return {
       setContext(next) {
+        // SharePoint changes folder and view by rewriting the query string, so
+        // the panel survives a move that invalidates everything it has read.
+        const previous = context;
+
         context = next;
+
+        const moved =
+          previous.listUrl !== next.listUrl ||
+          previous.folderUrl !== next.folderUrl ||
+          previous.viewId !== next.viewId;
+
+        if (moved) {
+          indexToken += 1;
+          entries = null;
+          indexing = null;
+          indexError = null;
+          indexTruncated = false;
+
+          if (previous.listUrl !== next.listUrl) isLibrary = undefined;
+
+          clearHits();
+
+          if (view.query.value.trim()) runQuery();
+        }
 
         if (!running && !view.panel.hidden) describe();
       },

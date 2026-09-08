@@ -2,13 +2,13 @@
 
 **Extension name:** SharePoint Loader  
 **Extension ID:** Assigned by the Chrome Web Store  
-**Last updated:** 2026-08-14
+**Last updated:** 2026-09-08
 
 ## 1. Single purpose
 
 > To give the user the complete contents of the SharePoint list they are
-> viewing, by loading every item into the page so SharePoint's own select-all
-> and "Download as zip" cover the whole list.
+> viewing: loading every item into the page so SharePoint's own select-all and
+> "Download as zip" cover the whole list, and finding an item in it by name.
 
 ## 2. Permission justification
 
@@ -36,11 +36,13 @@ adding a setting means updating this paragraph in the same change.
 
 > Access is required to add the extension's control to SharePoint list pages,
 > to load the list in the page by scrolling it, and to read the list's item
-> count through SharePoint's own REST API on the same site the user is already
-> viewing. The extension does not run on other sites. Broad SharePoint
-> subdomain matching is needed because each Microsoft 365 tenant uses its own
-> SharePoint subdomain and sovereign clouds use the listed country-specific
-> domains.
+> count and the names of the items in the current folder through SharePoint's
+> own REST API on the same site the user is already viewing. The names are
+> read so the user can find an item by name, which the browser's find-in-page
+> cannot do on a SharePoint list. The extension does not run on other sites.
+> Broad SharePoint subdomain matching is needed because each Microsoft 365
+> tenant uses its own SharePoint subdomain and sovereign clouds use the listed
+> country-specific domains.
 
 No host permissions beyond these content-script matches are declared, and the
 extension requests no optional permissions.
@@ -52,6 +54,9 @@ currently has open. These requests use the user's existing signed-in session,
 are same-origin with the page, and call the same documented SharePoint REST
 endpoints the SharePoint web interface itself uses to display a list
 (`RenderListDataAsStream`, `GetList`, and `contextinfo`). They are read-only.
+They are made when the user asks for the list's contents — opening the panel
+reads the item count, and typing in the find field reads the current folder's
+items once.
 
 No data is sent to the developer, to any analytics service, or to any other
 third party. The extension contains no remote code, no advertising, and no
@@ -73,7 +78,7 @@ SharePoint data from the user's own SharePoint tenant.
 | Location | Not collected | The extension does not access location data. |
 | Web history | Not collected | The extension neither records nor transmits visited URLs or search history. It reads the address of the current page only to identify which list is being viewed. |
 | User activity | Not collected | Selecting an action in the extension's own panel starts or stops work locally. Clicks, keystrokes, and browsing behaviour are not recorded or transmitted. |
-| Website content | Not collected | The extension reads the current list's item count from SharePoint and, on the scrolling path, inspects layout and row markers on the page. This content is processed in the browser. It is never transmitted anywhere. |
+| Website content | Not collected | The extension reads the current list's item count from SharePoint, reads the names and paths of the items in the folder the user is viewing when they use the find field, and, on the scrolling path, inspects layout and row markers on the page. This content is processed in the browser. It is never transmitted anywhere. |
 
 ### Required certifications
 
@@ -92,7 +97,9 @@ Select all three certifications in the Privacy practices tab:
   Chrome may synchronise these preferences between the user's own signed-in
   Chrome profiles.
 - List content read during a run exists only in the open page's memory and is
-  discarded when the page is closed or reloaded.
+  discarded when the page is closed or reloaded. The find field's index of item
+  names is held the same way, and is dropped as soon as the user moves to
+  another folder or view.
 - Uninstalling the extension removes the extension code and its stored
   preferences.
 
@@ -108,20 +115,23 @@ Enter that URL in the Developer Dashboard's privacy-policy field.
 The published wording follows; keep the two in step when either changes.
 
 > **SharePoint Loader Privacy Policy**  
-> Last updated: August 14, 2026
+> Last updated: September 8, 2026
 >
 > SharePoint Loader has one purpose: to give you the complete contents of the
-> SharePoint list you are viewing, by loading every item into the page.
+> SharePoint list you are viewing — loading every item into the page, and
+> finding an item in it by name.
 >
 > The extension does not collect, store, sell, or transmit your personal
 > information. It uses no analytics, advertising, remote code, or external
 > services, and it sends nothing to the developer.
 >
 > It asks SharePoint for the list's item count on the site you already have
-> open, using your existing sign-in. These requests are read-only and go only
-> to that SharePoint site. When you choose Load full list, the extension
-> examines page layout and row markers in order to scroll the list and report
-> progress. All of this happens in your browser.
+> open, using your existing sign-in, and when you use the find field it asks
+> for the names of the items in the folder you are viewing. These requests are
+> read-only and go only to that SharePoint site. When you choose Load full
+> list, the extension examines page layout and row markers in order to scroll
+> the list and report progress. All of this happens in your browser, and the
+> names it reads are discarded when you leave the folder or close the page.
 >
 > Your preferences — scrolling timings, theme, and settings kept for a later
 > export option — are stored in your browser profile using Chrome's storage,

@@ -11,7 +11,7 @@ Loader** Chrome Web Store item.
 
 **Summary** (132-character limit)
 
-> Load a long SharePoint list completely so select-all and Download as zip cover every item.
+> Load a long SharePoint list completely, and find any folder or file in it by name.
 
 **Detailed description**
 
@@ -31,6 +31,13 @@ Loader** Chrome Web Store item.
 >
 > While a run is going, the panel shows how many rows are on screen and can be
 > stopped at any time.
+>
+> **Find by name** — type a few letters and the matching folders and files
+> appear as links; select one to open it. Use this when the browser's own
+> Ctrl+F finds nothing: a SharePoint list keeps only a screenful of rows in the
+> page, so find-in-page has almost nothing to search. This asks SharePoint for
+> the items instead, so it covers the whole folder. Matching ignores case and
+> accents, and every word you type has to appear in the name, in any order.
 >
 > Settings — the scrolling timings and the panel theme — are on the extension's
 > options page.
@@ -87,6 +94,10 @@ Upload order:
 > the list keeps only a window of rows on screen no matter how many it has
 > fetched. It stops when the list settles, when the configured time limit is
 > reached, or when you select Stop.
+>
+> **Find by name** reads the current folder's items once through the same
+> read-only SharePoint API the list itself uses, then filters those names in
+> the page as you type. Selecting a result navigates to that folder or file.
 >
 > The gear icon opens the options page, which stores preferences using the
 > `storage` permission. No other permissions are requested and no data is sent
