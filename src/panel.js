@@ -224,26 +224,35 @@
   function createController(view, initialContext, host) {
     let context = initialContext;
     let settings = SPL.settings.defaults;
-    let running = false;
-    let cancelled = false;
+    // One run at a time: 'idle' -> 'running' -> ('stopping' ->) 'idle'.
+    // Stop only means something while a run is in flight.
+    let phase = 'idle';
     let partial = null;
 
-    const shouldStop = () => cancelled;
+    const shouldStop = () => phase === 'stopping';
 
     const setStatus = (text, isError) => {
       view.status.textContent = text;
       view.status.classList.toggle('error', Boolean(isError));
     };
 
-    const setRunning = (state) => {
-      running = state;
-      view.stopRow.hidden = !state;
+    const setPhase = (next) => {
+      phase = next;
+      const busy = next !== 'idle';
+
+      view.stopRow.hidden = !busy;
 
       const actions = SHOW_EXPORT ? [view.load, view.csv, view.json] : [view.load];
 
-      for (const button of actions) button.disabled = state;
+      for (const button of actions) button.disabled = busy;
 
-      if (state) view.partialRow.hidden = true;
+      if (next === 'running') view.partialRow.hidden = true;
+    };
+
+    const requestStop = () => {
+      if (phase !== 'running') return false;
+      phase = 'stopping';
+      return true;
     };
 
     const offerPartial = (found, chunks, format) => {
@@ -288,8 +297,7 @@
     });
 
     view.stop.addEventListener('click', () => {
-      cancelled = true;
-      setStatus('Stopping…');
+      if (requestStop()) setStatus('Stopping…');
     });
 
     view.load.addEventListener('click', () => runScroll());
@@ -332,24 +340,29 @@
     }
 
     async function runScroll() {
-      cancelled = false;
-      setRunning(true);
+      if (phase !== 'idle') return;
+      setPhase('running');
 
-      const result = await SPL.scroll.run({
-        settleMs: settings.scrollSettleMs,
-        maxRunMs: settings.scrollMaxRunMs,
-        shouldStop,
-        onProgress: (count) => setStatus(SPL.progress.label({ rendered: count })),
-      });
+      try {
+        const result = await SPL.scroll.run({
+          settleMs: settings.scrollSettleMs,
+          maxRunMs: settings.scrollMaxRunMs,
+          shouldStop,
+          onProgress: (count) => setStatus(SPL.progress.label({ rendered: count })),
+        });
 
-      setRunning(false);
-      setStatus(scrollMessage(result), result.reason === 'no-list');
+        setStatus(scrollMessage(result), result.reason === 'no-list');
+      } catch (error) {
+        setStatus(error.message, true);
+      } finally {
+        setPhase('idle');
+      }
     }
 
     async function runExport(format) {
-      cancelled = false;
+      if (phase !== 'idle') return;
       partial = null;
-      setRunning(true);
+      setPhase('running');
       setStatus(SPL.progress.label({ found: 0 }));
 
       try {
@@ -378,7 +391,7 @@
           offerPartial(error.partial.found, error.partial.chunks, error.partial.format);
         }
       } finally {
-        setRunning(false);
+        setPhase('idle');
       }
     }
 
@@ -386,10 +399,10 @@
       setContext(next) {
         context = next;
 
-        if (!running && !view.panel.hidden) describe();
+        if (phase === 'idle' && !view.panel.hidden) describe();
       },
       stop() {
-        cancelled = true;
+        requestStop();
       },
     };
   }
